@@ -1,63 +1,56 @@
 package bitpos
 
 import (
-  "math"
   "math/big"
 )
 
 const ByteBitCount = 8
 
-// Storing a bit position itself could be a very large number, potentially
-// overflowing the containing variable's bit width, so instead, we store
-// the offset of the byte within which the bit position falls, then we store
-// the offset that the last bit has in that byte.
 type BitPosition struct {
-  ByteOffset uint
-  BitOffset uint
+  *big.Int
 }
 
-func New(ByteOffset uint, BitOffset uint) BitPosition {
-  bp := BitPosition{ ByteOffset, BitOffset }
-  bp.normalize()
-  return bp
+func IsEqual(a, b BitPosition) bool {
+  return a.Cmp(b.Int) == 0
 }
 
-func (p BitPosition) Int() *big.Int {
-  res := big.NewInt(ByteBitCount)
-  res.Mul(res, big.NewInt(int64(p.ByteOffset)))
-  res.Add(res, big.NewInt(int64(p.BitOffset)))
-  return res
+// New allocates and returns a new BitPosition.
+//
+// byteOffset is limited to uint32 as a quick-n-dirty way to prevent
+// integer overflow when casting it to int64. This should be changed to
+// accept a uint64 and then handle greater-than-32-bit values.
+func New(byteOffset uint32, bitOffset uint8) BitPosition {
+  p := big.NewInt(ByteBitCount)
+  p.Mul(p, big.NewInt(int64(byteOffset)))
+  p.Add(p, big.NewInt(int64(bitOffset)))
+  return BitPosition{ p }
 }
 
 func (p BitPosition) Plus(other BitPosition) BitPosition {
-  calc := p.BitOffset + other.BitOffset
-  bytes := p.ByteOffset + other.ByteOffset + calc / ByteBitCount
-  bits := calc % ByteBitCount
-  return BitPosition{bytes, uint(bits)}
+  return BitPosition{ p.Add(p.Int, other.Int) }
 }
 
 func (p BitPosition) Minus(other BitPosition) BitPosition {
-  calc := float64(int(p.BitOffset) - int(other.BitOffset))
-  borrow := uint(math.Min(0, math.Floor(calc / ByteBitCount)))
-  bytes := p.ByteOffset - other.ByteOffset + borrow
-  bits := int(math.Abs(calc)) % ByteBitCount
-  if calc < 0 && bits > 0 {
-    bits = ByteBitCount - bits
-  }
-  return BitPosition{bytes, uint(bits)}
+  return BitPosition{ p.Sub(p.Int, other.Int) }
 }
 
-func (p BitPosition) CeilByteOffset() uint {
-  if p.ByteOffset < 0 {
-    return 0
-  }
-  if p.BitOffset > 0 {
-    return p.ByteOffset + 1
-  }
-  return p.ByteOffset
+func (p BitPosition) ByteOffset() uint64 {
+  p.Div(p.Int, big.NewInt(ByteBitCount))
+  return p.Uint64()
 }
 
-func (p *BitPosition) normalize() {
-  p.ByteOffset += p.BitOffset / ByteBitCount
-  p.BitOffset %= ByteBitCount
+func (p BitPosition) BitOffset() uint64 {
+  p.Mod(p.Int, big.NewInt(ByteBitCount))
+  return p.Uint64()
+}
+
+// CeilByteOffset returns the byte index that the bit position corresponds
+// to, or 1 greater.
+//
+// When the bit position divided by the byte bit count is still greater than
+// a 64-bit value, overflow could occur, and this should be dealt with.
+func (p BitPosition) CeilByteOffset() uint64 {
+  p.Add(p.Int, big.NewInt(ByteBitCount - 1))
+  p.Div(p.Int, big.NewInt(ByteBitCount))
+  return p.Uint64()
 }
