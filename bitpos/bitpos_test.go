@@ -3,18 +3,32 @@ package bitpos_test
 import (
   "testing"
   "github.com/pjrebsch/mizudiff/bitpos"
+  "math"
   "math/big"
 )
+
+var tblNew = []struct {
+  x1 uint32; x2 uint8  // byte offset inputs
+  r  int64
+}{
+  {0, 0,  0},
+  {1, 1,  9},
+  {1, 10, 18},
+  {math.MaxUint32, math.MaxUint8, math.MaxUint32 * bitpos.C + math.MaxUint8},
+}
 
 var tblPlus = []struct {
   x1 uint32; x2 uint8  // byte offset inputs
   y1 uint32; y2 uint8  // bit offset inputs
-  r1 uint32; r2 uint8  // expectation
+  r  int64             // expectation
 }{
-  {0,0, 0,0, 0,0},
-  {1,2, 3,4, 4,6},
-  {0,8, 0,1, 1,1},
-  {9,9, 9,10, 20,3},
+  {0,0, 0,0,  0},
+  {1,2, 3,4,  38},
+  {0,8, 0,1,  9},
+  {9,9, 9,10, 163},
+  { math.MaxUint32, math.MaxUint8,
+    math.MaxUint32, math.MaxUint8,
+    math.MaxUint32 * bitpos.C * 2 + math.MaxUint8 * 2 },
 }
 
 var tblMinus = []struct {
@@ -26,6 +40,7 @@ var tblMinus = []struct {
   {1,2, 3,4,  -18},
   {0,8, 0,1,  7},
   {9,9, 9,10, -1},
+  {0,0, math.MaxUint32, math.MaxUint8, -math.MaxUint32 * bitpos.C - math.MaxUint8},
 }
 
 var tblCeilByteOffset = []struct {
@@ -37,6 +52,7 @@ var tblCeilByteOffset = []struct {
   {1,0, 1},
   {1,1, 2},
   {2,7, 3},
+  {math.MaxUint32, bitpos.C - 1, math.MaxUint32 + 1},
 }
 
 func TestIsEqual(t *testing.T) {
@@ -49,11 +65,16 @@ func TestIsEqual(t *testing.T) {
 }
 
 func TestNew(t *testing.T) {
-  a := bitpos.New(1, bitpos.ByteBitCount + 2)
-  b := bitpos.BitPosition{ big.NewInt(18) }
+  for _, e := range tblNew {
+    a := bitpos.New( e.x1, e.x2 )
+    b := bitpos.BitPosition{ big.NewInt(e.r) }
 
-  if !bitpos.IsEqual(a,b) {
-    t.Error("expected", a, "to equal", b)
+    if !bitpos.IsEqual(a,b) {
+      t.Errorf(
+        "New(%d, %d): expected %d, got %d",
+        e.x1, e.x2, b, a,
+      )
+    }
   }
 }
 
@@ -63,10 +84,13 @@ func TestPlus(t *testing.T) {
     y := bitpos.New( e.y1, e.y2 )
 
     actual := x.Plus(y)
-    expected := bitpos.New( e.r1, e.r2 )
+    expected := bitpos.BitPosition{ big.NewInt(e.r) }
 
     if !bitpos.IsEqual(actual, expected) {
-      t.Error("expected", actual, "to equal", expected)
+      t.Errorf(
+        "%d.Plus(%d): expected %d, got %d",
+        x, y, expected, actual,
+      )
     }
   }
 }
@@ -80,7 +104,10 @@ func TestMinus(t *testing.T) {
     expected := bitpos.BitPosition{ big.NewInt(e.r) }
 
     if !bitpos.IsEqual(actual, expected) {
-      t.Error("expected", actual, "to equal", expected)
+      t.Errorf(
+        "%d.Minus(%d): expected %d, got %d",
+        x, y, expected, actual,
+      )
     }
   }
 }
@@ -93,7 +120,10 @@ func TestCeilByteOffset(t *testing.T) {
     expected := e.r
 
     if actual != expected {
-      t.Error("expected", expected, "got", actual)
+      t.Errorf(
+        "%d.CeilByteOffset(): expected %d, got %d",
+        x, expected, actual,
+      )
     }
   }
 }

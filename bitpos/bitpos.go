@@ -4,7 +4,8 @@ import (
   "math/big"
 )
 
-const ByteBitCount = 8
+// C represents the number of bits in a byte.
+const C = 8
 
 type BitPosition struct {
   *big.Int
@@ -20,28 +21,30 @@ func IsEqual(a, b BitPosition) bool {
 // integer overflow when casting it to int64. This should be changed to
 // accept a uint64 and then handle greater-than-32-bit values.
 func New(byteOffset uint32, bitOffset uint8) BitPosition {
-  p := big.NewInt(ByteBitCount)
+  p := big.NewInt(C)
   p.Mul(p, big.NewInt(int64(byteOffset)))
   p.Add(p, big.NewInt(int64(bitOffset)))
   return BitPosition{ p }
 }
 
 func (p BitPosition) Plus(other BitPosition) BitPosition {
-  return BitPosition{ p.Add(p.Int, other.Int) }
+  return BitPosition{ big.NewInt(0).Add(p.Int, other.Int) }
 }
 
 func (p BitPosition) Minus(other BitPosition) BitPosition {
-  return BitPosition{ p.Sub(p.Int, other.Int) }
+  return BitPosition{ big.NewInt(0).Sub(p.Int, other.Int) }
 }
 
 func (p BitPosition) ByteOffset() uint64 {
-  p.Div(p.Int, big.NewInt(ByteBitCount))
-  return p.Uint64()
+  r := big.NewInt(0)
+  r.Div(p.Int, big.NewInt(C))
+  return r.Uint64()
 }
 
 func (p BitPosition) BitOffset() uint64 {
-  p.Mod(p.Int, big.NewInt(ByteBitCount))
-  return p.Uint64()
+  r := big.NewInt(0)
+  r.Mod(p.Int, big.NewInt(C))
+  return r.Uint64()
 }
 
 // CeilByteOffset returns the byte index that the bit position corresponds
@@ -50,7 +53,8 @@ func (p BitPosition) BitOffset() uint64 {
 // When the bit position divided by the byte bit count is still greater than
 // a 64-bit value, overflow could occur, and this should be dealt with.
 func (p BitPosition) CeilByteOffset() uint64 {
-  p.Add(p.Int, big.NewInt(ByteBitCount - 1))
-  p.Div(p.Int, big.NewInt(ByteBitCount))
-  return p.Uint64()
+  r := big.NewInt(0)
+  r.Add(p.Int, big.NewInt(C - 1))
+  r.Div(r,     big.NewInt(C))
+  return r.Uint64()
 }

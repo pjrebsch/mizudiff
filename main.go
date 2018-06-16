@@ -142,7 +142,7 @@ func prettyDiffComparison(diff []byte) {
 
 // Assumes that bit_pos is zero-based.
 func bytePositionToNearestBitPosition(src []byte, bit_pos int) int {
-  return bit_pos / (bitpos.ByteBitCount - 1)
+  return bit_pos / (bitpos.C - 1)
 }
 
 func calculateNewLength(element_count, element_length, advance_rate uint) uint {
@@ -177,7 +177,7 @@ func xorCompress(in []byte) []byte {
       out[k] ^= b >> pos.BitOffset
 
       if pos.BitOffset > 0 {
-        out[k+1] |= b << (bitpos.ByteBitCount - pos.BitOffset)
+        out[k+1] |= b << (bitpos.C - pos.BitOffset)
       }
     }
   }

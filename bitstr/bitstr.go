@@ -23,7 +23,7 @@ func (s BitString) Debug() {
 
   bits := s.Length.BitOffset
 
-  end := len(str) + int(bits - bitpos.ByteBitCount) % bitpos.ByteBitCount
+  end := len(str) + int(bits - bitpos.C) % bitpos.C
   bytestr = bytestr[:end]
 
   fmt.Printf("%s\n", bytestr)
@@ -65,7 +65,7 @@ func (s BitString) ShiftRight(offset uint) BitString {
   }
 
   var saved byte
-  var shift_by uint = offset % bitpos.ByteBitCount
+  var shift_by uint = offset % bitpos.C
 
   for i := new_lead_length.ByteOffset; i < new_length.CeilByteOffset(); i += 1 {
     j := i - new_lead_length.ByteOffset
@@ -76,7 +76,7 @@ func (s BitString) ShiftRight(offset uint) BitString {
     }
 
     buf[i] = b >> shift_by | saved
-    saved = b << (bitpos.ByteBitCount - shift_by)
+    saved = b << (bitpos.C - shift_by)
   }
 
   return New(buf, new_length)
@@ -114,15 +114,15 @@ func (s BitString) ShiftLeft(offset uint) BitString {
   // buf := make([]byte, new_length.CeilByteOffset())
   //
   // var saved byte
-  // var shift_by uint = offset % bitpos.ByteBitCount
-  // var start_at uint = offset / bitpos.ByteBitCount
+  // var shift_by uint = offset % bitpos.C
+  // var start_at uint = offset / bitpos.C
   //
   // for i := 0; uint(i) < new_length.CeilByteOffset(); i += 1 {
   //   j := uint(i) + start_at
   //   b := s.Bytes[j]
   //
   //   buf[i] = b << shift_by | saved
-  //   saved = b >> (bitpos.ByteBitCount - shift_by)
+  //   saved = b >> (bitpos.C - shift_by)
   // }
   //
   // return BitString{ buf, new_length }
@@ -148,7 +148,7 @@ func (s BitString) slice(from, to bitpos.BitPosition) BitString {
       tmp := buf[i] << from.BitOffset
 
       if i + 1 < len(buf) {
-        tmp |= buf[i+1] >> (bitpos.ByteBitCount - from.BitOffset)
+        tmp |= buf[i+1] >> (bitpos.C - from.BitOffset)
       }
 
       out[i/2] = tmp
@@ -165,7 +165,7 @@ func (s *BitString) zeroExtraBits() {
   res := make([]byte, len(s.Bytes))
   n := copy(res, s.Bytes)
   if s.Length.BitOffset > 0 {
-    off := bitpos.ByteBitCount - s.Length.BitOffset
+    off := bitpos.C - s.Length.BitOffset
     res[n-1] = res[n-1] >> off << off
   }
   s.Bytes = res
