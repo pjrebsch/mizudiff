@@ -7,6 +7,8 @@ import (
   "encoding/hex"
   "io/ioutil"
   "bytes"
+  "github.com/pjrebsch/mizudiff/bitstr"
+  "github.com/pjrebsch/mizudiff/bitpos"
 )
 
 func loadSources() ([]byte, []byte) {
@@ -52,8 +54,6 @@ const SIG_ADVANCE_RATE = 1 // bytes per block
 // SIG_ABSORPTION_LENGTH is the amount of overlap that two source blocks
 // share in a signature.
 const SIG_ABSORPTION_LENGTH = SRC_BLOCK_SIZE - SIG_ADVANCE_RATE
-
-const BITS_IN_BYTE = 8
 
 func calculateSourceSignatureLength(src_length int) int {
   if src_length <= SRC_BLOCK_SIZE {
@@ -142,7 +142,7 @@ func prettyDiffComparison(diff []byte) {
 
 // Assumes that bit_pos is zero-based.
 func bytePositionToNearestBitPosition(src []byte, bit_pos int) int {
-  return bit_pos / (BITS_IN_BYTE - 1)
+  return bit_pos / (bitpos.ByteBitCount - 1)
 }
 
 func calculateNewLength(element_count, element_length, advance_rate uint) uint {
@@ -153,33 +153,31 @@ func xorCompress(in []byte) []byte {
   var advance_rate uint = 3
   var window_size uint16 = 8
 
-  root := bitString{ in, bitPosition{ uint(len(in)), 0 } }
-  slices := root.splitBy(window_size)
+  root := bitstr.New(in, bitpos.New(uint(len(in)), 0))
+  slices := root.SplitBy(window_size)
 
   new_bit_count := calculateNewLength(uint(len(slices)), uint(window_size), advance_rate)
-  new_length := bitPosition{ 0, new_bit_count }
-  new_length.normalize()
+  new_length := bitpos.New(0, new_bit_count)
 
-  out := make([]byte, new_length.ceilByteOffset())
+  out := make([]byte, new_length.CeilByteOffset())
 
   for i := 0; i < len(slices); i += 1 {
-    pos := bitPosition{ 0, uint(i) * advance_rate }
-    pos.normalize()
+    pos := bitpos.New(0, uint(i) * advance_rate)
 
     prefix := make([]byte, uint(i) * advance_rate)
     for d := range prefix {
       prefix[d] = ' '
     }
     fmt.Printf("%s", prefix)
-    slices[i].debug()
+    slices[i].Debug()
 
-    for j, b := range slices[i].bytes {
-      k := pos.byte_offset + uint(j)
+    for j, b := range slices[i].Bytes {
+      k := pos.ByteOffset + uint(j)
 
-      out[k] ^= b >> pos.bit_offset
+      out[k] ^= b >> pos.BitOffset
 
-      if pos.bit_offset > 0 {
-        out[k+1] |= b << (BITS_IN_BYTE - pos.bit_offset)
+      if pos.BitOffset > 0 {
+        out[k+1] |= b << (bitpos.ByteBitCount - pos.BitOffset)
       }
     }
   }
@@ -201,9 +199,9 @@ func main() {
   sigB := b
 
   debug("BEFORE: %08b\n", sigB)
-  bs := bitString{ sigB, bitPosition{ uint(len(sigB)), 0 } }
-  bs = bs.shiftLeft(7)
-  sigB = bs.bytes
+  bs := bitstr.New(sigB, bitpos.New(uint(len(sigB)), 0))
+  bs = bs.ShiftLeft(7)
+  sigB = bs.Bytes
   debug("AFTER : %08b\n", sigB)
 
   debug("len(A): %#v | len(sig_A): %#v | Ratio: %f%%\n", len(a), len(sigA), float64(len(sigA))/float64(len(a))*100)
