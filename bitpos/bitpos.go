@@ -28,22 +28,20 @@ func New(byteOffset uint32, bitOffset uint8) BitPosition {
 }
 
 func (p BitPosition) Plus(other BitPosition) BitPosition {
-  return BitPosition{ big.NewInt(0).Add(p.Int, other.Int) }
+  return BitPosition{ initInt().Add(p.Int, other.Int) }
 }
 
 func (p BitPosition) Minus(other BitPosition) BitPosition {
-  return BitPosition{ big.NewInt(0).Sub(p.Int, other.Int) }
+  return BitPosition{ initInt().Sub(p.Int, other.Int) }
 }
 
 func (p BitPosition) ByteOffset() uint64 {
-  r := big.NewInt(0)
-  r.Div(p.Int, big.NewInt(C))
+  r := initInt().Div(p.Int, big.NewInt(C))
   return r.Uint64()
 }
 
 func (p BitPosition) BitOffset() uint64 {
-  r := big.NewInt(0)
-  r.Mod(p.Int, big.NewInt(C))
+  r := initInt().Mod(p.Int, big.NewInt(C))
   return r.Uint64()
 }
 
@@ -53,8 +51,12 @@ func (p BitPosition) BitOffset() uint64 {
 // When the bit position divided by the byte bit count is still greater than
 // a 64-bit value, overflow could occur, and this should be dealt with.
 func (p BitPosition) CeilByteOffset() uint64 {
-  r := big.NewInt(0)
+  r := initInt()
   r.Add(p.Int, big.NewInt(C - 1))
   r.Div(r,     big.NewInt(C))
   return r.Uint64()
+}
+
+func initInt() *big.Int {
+  return big.NewInt(0)
 }
