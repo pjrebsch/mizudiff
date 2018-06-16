@@ -2,6 +2,7 @@ package bitpos
 
 import (
   "math"
+  "math/big"
 )
 
 const ByteBitCount = 8
@@ -19,6 +20,13 @@ func New(ByteOffset uint, BitOffset uint) BitPosition {
   bp := BitPosition{ ByteOffset, BitOffset }
   bp.normalize()
   return bp
+}
+
+func (p BitPosition) Int() *big.Int {
+  res := big.NewInt(ByteBitCount)
+  res.Mul(res, big.NewInt(int64(p.ByteOffset)))
+  res.Add(res, big.NewInt(int64(p.BitOffset)))
+  return res
 }
 
 func (p BitPosition) Plus(other BitPosition) BitPosition {
