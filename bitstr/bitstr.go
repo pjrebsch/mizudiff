@@ -10,24 +10,17 @@ import (
 
 type BitString struct {
   bytes []byte
-  length bitpos.BitPosition
-}
 
-// func (s BitString) Debug() {
-//   str := fmt.Sprintf("%08b", s.Bytes)
-//   str = strings.Replace(str, " ", "", -1)
-//   str = strings.Trim(str, "[]")
-//
-//   bytestr := make([]byte, len(str))
-//   copy(bytestr, str)
-//
-//   bits := s.Length.BitOffset
-//
-//   end := len(str) + int(bits - bitpos.C) % bitpos.C
-//   bytestr = bytestr[:end]
-//
-//   fmt.Printf("%s\n", bytestr)
-// }
+  // Bit length of the string.
+  length bitpos.BitPosition
+
+  // Bit offset from the start of bytes where the string is considered to begin.
+  // This value may be anything. If this value is negative, the bits preceding
+  // the byte data are considered to be zeros. Similary, if this value or it
+  // plus the length exceeds the end of the byte data, the proceeding bits are
+  // considered to be zeros.
+  // offset bitpos.BitPosition
+}
 
 func New(bytes []byte, length bitpos.BitPosition) BitString {
   l := length.CeilByteOffset()
@@ -173,6 +166,22 @@ func (s BitString) Length() bitpos.BitPosition {
 //
 //   // We should zero any bits in the bytes that are outside of the length.
 //   return New(out, real_length)
+// }
+//
+// func (s BitString) Debug() {
+//   str := fmt.Sprintf("%08b", s.Bytes)
+//   str = strings.Replace(str, " ", "", -1)
+//   str = strings.Trim(str, "[]")
+//
+//   bytestr := make([]byte, len(str))
+//   copy(bytestr, str)
+//
+//   bits := s.Length.BitOffset
+//
+//   end := len(str) + int(bits - bitpos.C) % bitpos.C
+//   bytestr = bytestr[:end]
+//
+//   fmt.Printf("%s\n", bytestr)
 // }
 
 func (s *BitString) zeroExtraBits() {
