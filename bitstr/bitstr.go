@@ -22,13 +22,12 @@ type BitString struct {
   // offset bitpos.BitPosition
 }
 
-func New(bytes []byte, length bitpos.BitPosition) BitString {
-  l := length.CeilByteOffset()
+func New(bytes []byte) BitString {
+  l := len(bytes)
   b := make([]byte, l, l)
   copy(b, bytes)
 
-  s := BitString{ b, length }
-  s.zeroExtraBits()
+  s := BitString{ b, bitpos.New(uint32(l), 0) }
   return s
 }
 

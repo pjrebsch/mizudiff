@@ -9,67 +9,22 @@ import(
   "bytes"
 )
 
-var tblNew = []struct {
-  init []byte           // initial byte data
-  l bitpos.BitPosition  // bit string length
-  expect []byte         // stored byte data
+var tblConstructors = []struct{
+  byteLen int
+  strSeed int64
 }{
-  {
-    []byte{ 0x15, 0xc3, 0x84, 0xb4, 0x7f },
-    bitpos.New(0, 0),
-    []byte{},
-  }, {
-    []byte{ 0x15, 0xc3, 0x84, 0xb4, 0x7f },
-    bitpos.New(3, 4),
-    []byte{ 0x15, 0xc3, 0x84, 0xb0 },
-  },
+  { 0, 80192744 },
+  { 5, 2803843 },
+  { 127, 199332 },
+  { 256, 245532 },
+  { 5000, 78229892 },
+  { 10000, 3094199 },
 }
 
 func TestNew(t *testing.T) {
-  for _, e := range tblNew {
-    s := bitstr.New(e.init, e.l)
-
-    t.Run("returns correct bit length", func(t *testing.T) {
-      actual := s.Length().Uint64()
-      expected := e.l.Uint64()
-
-      if actual != expected {
-        t.Errorf(
-          "New(%02x, %d): expected bit length %d, got %d",
-          e.init, e.l, expected, actual,
-        )
-      }
-    })
-
-    t.Run("returns correct byte length", func(t *testing.T) {
-      actual := len(s.Bytes())
-      expected := int(e.l.CeilByteOffset())
-
-      if actual != expected {
-        t.Errorf(
-          "New(%02x, %d): expected byte length %d, got %d",
-          e.init, e.l, expected, actual,
-        )
-      }
-    })
-
-    t.Run("refers to correct byte data", func(t *testing.T) {
-      actual := s.Bytes()
-      expected := e.expect
-
-      if !bytes.Equal(actual, expected) {
-        t.Errorf(
-          "New(%02x, %d): expected %02x, got %02x",
-          e.init, e.l, expected, actual,
-        )
-      }
-    })
-  }
-
   t.Run("uses a copy of the original slice", func(t *testing.T) {
-    b := []byte{ 0xff, 0xff }
-    l := bitpos.New(2,0)
-    s := bitstr.New(b, l)
+    b := []byte{ 0xff }
+    s := bitstr.New(b)
 
     // Change the slice originally used to create the bit string.
     // The changes should not be seen in the bit string's bytes.
@@ -80,56 +35,127 @@ func TestNew(t *testing.T) {
 
     if actual != expected {
       t.Errorf(
-        "New(%02x, %d): expected %02x, got %02x",
-        b, l, expected, actual,
+        "New(%02x): expected %02x, got %02x",
+        b, expected, actual,
       )
     }
   })
 }
 
-// func TestBytes(t *testing.T) {
-//   t.Run("returns the initializing bytes", func(t *testing.T) {
-//     s, b, p := makeBitString(15, byte(0xff), 15, 0)
-//
-//     actual := s.Bytes()
-//     expected := b
-//
-//     if !bytes.IsEqual(actual, expected) {
-//       t.Errorf("Bytes(): expected %02x, got %02x", expected, actual)
-//     }
-//   })
-//
-//   t.Run("returns separate slices", func(t *testing.T) {
-//     s, b, _ := makeBitString(15, byte(0xff), 15, 0)
-//
-//     x := s.Bytes()
-//     x[0] = byte(0x00)
-//     y := s.Bytes()
-//
-//     actual := y[0]
-//     expected := b[0]
-//
-//     if actual != expected {
-//       t.Errorf("Bytes(): expected %02x, got %02x", expected, actual)
-//     }
-//   })
-// }
+func TestBytes(t *testing.T) {
+  for _, e := range tblConstructors {
+    b := deterministicBytes(e.byteLen, e.strSeed)
+    s := bitstr.New(b)
 
-// func makeBitString(
-//   bl int, b byte, p bitpos.BitPosition,
-// ) (
-//   bitstr.BitString, []byte, bitpos.BitPosition,
-// ) {
-//   bytes := make([]byte, bl)
-//   for i := range bytes {
-//     bytes[i] = b
-//   }
-//
-//   p := bitpos.New(x1, x2)
-//   s := bitstr.New(bytes, p)
-//
-//   return s, bytes, p
-// }
+    t.Run("returns the initializing bytes", func(t *testing.T) {
+      actual := s.Bytes()
+      expected := b
+
+      if !bytes.Equal(actual, expected) {
+        t.Errorf("Bytes(): expected %02x, got %02x", expected, actual)
+      }
+    })
+  }
+
+  t.Run("returns separate slices", func(t *testing.T) {
+    b := []byte{ 0xff }
+    s := bitstr.New(b)
+
+    x := s.Bytes()
+    x[0] = byte(0x00)
+    y := s.Bytes()
+
+    actual := y[0]
+    expected := b[0]
+
+    if actual != expected {
+      t.Errorf("Bytes(): expected %02x, got %02x", expected, actual)
+    }
+  })
+}
+
+func TestLength(t *testing.T) {
+  for _, e := range tblConstructors {
+    b := deterministicBytes(e.byteLen, e.strSeed)
+    s := bitstr.New(b)
+
+    t.Run("returns correct bit length", func(t *testing.T) {
+      actual := s.Length().Uint64()
+      expected := uint64(e.byteLen) * bitpos.C
+
+      if actual != expected {
+        t.Errorf(
+          "New(%02x): expected bit length %d, got %d",
+          b, expected, actual,
+        )
+      }
+    })
+  }
+
+  t.Run("returns separate length structs", func(t *testing.T) {
+    b := []byte{ 0xff }
+    s := bitstr.New(b)
+
+    x := s.Length()
+    xPtr := &x
+    y := s.Length()
+    yPtr := &y
+
+    if xPtr == yPtr {
+      t.Errorf("Length(): expected address %p to differ from %p", xPtr, yPtr)
+    }
+  })
+}
+
+var tblXORCompress = []struct{
+  in, out []byte
+  advanceRate, windowSize uint8
+}{
+  {
+    []byte{0xf8},
+    []byte{0xf8},
+    1, 8,
+  }, {
+    // 11111000  (0xf8)
+    //  10000000  (0x80)
+    // 101110000
+    []byte{0xf8, 0x80},
+    []byte{0xb8, 0x00},
+    1, 8,
+  }, {
+    // 10011000  (0x98)
+    //  01000000  (0x40)
+    // 101110000
+    []byte{0xf8, 0x80},
+    []byte{0xb8, 0x00},
+    1, 8,
+  }, {
+    // 11111000  (0xf8)
+    //  10101100  (0xac)
+    //   01001000  (0x48)
+    //    01101110  (0x6e)
+    //     00001111  (0x0f)
+    //      11011010  (0xda)
+    //       10011000  (0x98)
+    //        01101001  (0x69)
+    //         00111100  (0x3c)
+    //          00110101  (0x35)
+    // 10110101011101001
+    []byte{0xf8, 0xac, 0x48, 0x6e, 0x0f, 0xda, 0x98, 0x69, 0x3c, 0x35},
+    []byte{0xb5, 0x74, 0x80},
+    1, 8,
+  },
+}
+
+func TestXORCompress(t *testing.T) {
+  // TODO: test empty byte slice as a special case where window size and
+  // advance rate are irrelevant.
+
+  for _, e := range tblXORCompress {
+    t.Logf("%08b", e.in)
+    t.Logf("%08b", e.out)
+  }
+}
 
 func deterministicBytes(length int, seed int64) []byte {
   src := rand.NewSource(seed)
