@@ -9,7 +9,7 @@ import(
   "bytes"
 )
 
-var tblConstructors = []struct{
+var tblConstructors = []struct {
   byteLen int
   strSeed int64
 }{
@@ -107,7 +107,7 @@ func TestLength(t *testing.T) {
   })
 }
 
-var tblXORCompress = []struct{
+var tblXORCompress = []struct {
   in, out []byte
   advanceRate, windowSize uint8
 }{
@@ -145,6 +145,31 @@ var tblXORCompress = []struct{
     []byte{0xb5, 0x74, 0x80},
     1, 8,
   },
+}
+
+var tblSetLength = []struct {
+  byteOffset int64
+  bitOffset int8
+  hasError error
+}{
+  {0,-1, true},
+  {0,0, false},
+}
+func TestSetLength(t *testing.T) {
+  for _, e := range tblSetLength {
+    b := bitstr.New( []byte{ 0xff, 0xff } )
+    p := bitpos.New( e.byteOffset, e.bitOffset )
+
+    actual := b.SetLength(p)
+    expected := e.hasError
+
+    if actual != expected {
+      t.Errorf(
+        "SetLength(%d): expected error? %t, got %t",
+        p, expected, actual,
+      )
+    }
+  }
 }
 
 func TestXORCompress(t *testing.T) {

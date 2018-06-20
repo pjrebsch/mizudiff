@@ -6,6 +6,7 @@ import (
   // "strings"
   // "math/bits"
   "github.com/pjrebsch/mizudiff/bitpos"
+  "errors"
 )
 
 type BitString struct {
@@ -39,6 +40,12 @@ func (s BitString) Bytes() []byte {
 
 func (s BitString) Length() bitpos.BitPosition {
   return s.length
+}
+
+func (s BitString) SetLength(p bitpos.BitPosition) error {
+  if p.Sign() == -1 {
+    return errors.New("length cannot be negative")
+  }
 }
 
 // func (s BitString) SplitBy(window_size uint16) []BitString {
