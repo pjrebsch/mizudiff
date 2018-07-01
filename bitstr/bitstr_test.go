@@ -175,6 +175,19 @@ func TestSetLength(t *testing.T) {
 }
 
 func TestXORCompress(t *testing.T) {
+  t.Run("advance rate can't be greater than window size", func(t *testing.T) {
+    s := bitstr.New( []byte{} )
+    adv := uint8(2)
+    win := uint8(1)
+    _, err := s.XORCompress(adv, win)
+    if err == nil {
+      t.Errorf(
+        "XORCompress(%d, %d): expected an error, but didn't get one",
+        adv, win,
+      )
+    }
+  })
+
   var tbl = []struct {
     in, out []byte
     advanceRate, windowSize uint8
@@ -219,6 +232,7 @@ func TestXORCompress(t *testing.T) {
   // advance rate are irrelevant.
 
   for _, e := range tbl {
+    // TODO: actually test it
     t.Logf("%08b", e.in)
     t.Logf("%08b", e.out)
   }

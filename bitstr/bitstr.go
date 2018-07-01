@@ -43,6 +43,15 @@ func (s *BitString) SetLength(p bitpos.BitPosition) error {
   return nil
 }
 
+func (s BitString) XORCompress(adv, win uint8) (BitString, error) {
+  if adv > win {
+    err := errors.New("advanceRate can't be greater than windowSize")
+    return BitString{}, err
+  }
+
+  return BitString{}, nil
+}
+
 // func (s BitString) SplitBy(window_size uint16) []BitString {
 //   var list []BitString
 //
