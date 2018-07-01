@@ -23,14 +23,6 @@ func New(byteOffset int64, bitOffset int64) BitPosition {
   return BitPosition{ p }
 }
 
-func (p BitPosition) Plus(other BitPosition) BitPosition {
-  return BitPosition{ initInt().Add(p.Int, other.Int) }
-}
-
-func (p BitPosition) Minus(other BitPosition) BitPosition {
-  return BitPosition{ initInt().Sub(p.Int, other.Int) }
-}
-
 func (p BitPosition) ByteOffset() int64 {
   r := initInt().Div(p.Int, big.NewInt(C))
   return r.Int64()
@@ -41,6 +33,14 @@ func (p BitPosition) BitOffset() int64 {
   return r.Int64()
 }
 
+func (p BitPosition) Plus(other BitPosition) BitPosition {
+  return BitPosition{ initInt().Add(p.Int, other.Int) }
+}
+
+func (p BitPosition) Minus(other BitPosition) BitPosition {
+  return BitPosition{ initInt().Sub(p.Int, other.Int) }
+}
+
 // CeilByteOffset takes the absolute value bit index and returns the
 // the ceiling byte offset that it would correspond to. This is primarily
 // used for determining the correct byte slice size for a given bit string.
@@ -48,9 +48,9 @@ func (p BitPosition) BitOffset() int64 {
 // When the bit position divided by the "byte bit count" is still greater than
 // a 64-bit value, overflow could occur, and this should be dealt with.
 func (p BitPosition) CeilByteOffset() uint64 {
-  r := p.Abs(p.Int)
-  r.Add(p.Int, big.NewInt(C - 1))
-  r.Div(r,     big.NewInt(C))
+  r := initInt().Abs(p.Int)
+  r.Add(r, big.NewInt(C - 1))
+  r.Div(r, big.NewInt(C))
   return r.Uint64()
 }
 

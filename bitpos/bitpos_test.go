@@ -47,6 +47,47 @@ func TestNew(t *testing.T) {
   }
 }
 
+var tblOffsets = []struct {
+  x1, x2 int64  // inputs
+  r1, r2 int64  // expectations
+}{
+  {0,0, 0,0},
+  {0,5, 0,5},
+  {1,0, 1,0},
+  {0,10, 1,2},
+  {3,17, 5,1},
+}
+func TestByteOffset(t *testing.T) {
+  for _, e := range tblOffsets {
+    p := bitpos.New( e.x1, e.x2 )
+
+    actual := p.ByteOffset()
+    expected := e.r1
+
+    if actual != expected {
+      t.Errorf(
+        "ByteOffset(): expected %d, got %d",
+        expected, actual,
+      )
+    }
+  }
+}
+func TestBitOffset(t *testing.T) {
+  for _, e := range tblOffsets {
+    p := bitpos.New( e.x1, e.x2 )
+
+    actual := p.BitOffset()
+    expected := e.r2
+
+    if actual != expected {
+      t.Errorf(
+        "BitOffset(): expected %d, got %d",
+        expected, actual,
+      )
+    }
+  }
+}
+
 var tblPlus = []struct {
   x1, x2 int64  // byte offset inputs
   y1, y2 int64  // byte offset inputs

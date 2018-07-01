@@ -1,12 +1,12 @@
 package bitstr
 
 import (
-  // "fmt"
-  // "math"
-  // "strings"
-  // "math/bits"
   "github.com/pjrebsch/mizudiff/bitpos"
   "errors"
+  "math"
+  // "fmt"
+  // "strings"
+  // "math/bits"
 )
 
 type BitString struct {
@@ -47,7 +47,7 @@ func (s *BitString) SetLength(p bitpos.BitPosition) error {
     return errors.New("length cannot be negative")
   }
   s.length = p
-  s.zeroExtraBits()
+  s.trim()
   return nil
 }
 
@@ -193,12 +193,25 @@ func (s *BitString) SetLength(p bitpos.BitPosition) error {
 //   fmt.Printf("%s\n", bytestr)
 // }
 
+func (s *BitString) trim() {
+  l := s.length.CeilByteOffset()
+  n := uint64(len(s.bytes))
+
+  if l != n {
+    least := uint64(math.Min(float64(l), float64(n)))
+    buf := make([]byte, l, l)
+    copy(buf, s.bytes[:least])
+    s.bytes = buf
+  }
+
+  s.zeroExtraBits()
+}
+
 func (s *BitString) zeroExtraBits() {
   n := len(s.bytes)
   if n == 0 {
     return
   }
-
   if bits := s.length.BitOffset(); bits > 0 {
     off := uint64(bitpos.C - bits)
     s.bytes[n-1] = s.bytes[n-1] >> off << off
