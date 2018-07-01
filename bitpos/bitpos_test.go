@@ -30,6 +30,8 @@ var tblNew = []struct {
   {-1, -1, -9},
   {-1, -10, -18},
   {math.MinInt32, math.MinInt8, math.MinInt32 * bitpos.C + math.MinInt8},
+  {2, -10, 6},
+  {-2, 10, -6},
 }
 func TestNew(t *testing.T) {
   for _, e := range tblNew {
