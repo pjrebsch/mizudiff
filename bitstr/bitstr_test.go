@@ -150,17 +150,21 @@ var tblXORCompress = []struct {
 var tblSetLength = []struct {
   byteOffset int64
   bitOffset int8
-  hasError error
+  hasError bool
 }{
-  {0,-1, true},
-  {0,0, false},
+  {-1, 0, true},
+  {0, -1, true},
+  {0,  0, false},
+  {0,  9, false},
+  {10, 0, false},
 }
 func TestSetLength(t *testing.T) {
   for _, e := range tblSetLength {
     b := bitstr.New( []byte{ 0xff, 0xff } )
     p := bitpos.New( e.byteOffset, e.bitOffset )
 
-    actual := b.SetLength(p)
+    err := b.SetLength(p)
+    actual := err != nil
     expected := e.hasError
 
     if actual != expected {
@@ -169,7 +173,37 @@ func TestSetLength(t *testing.T) {
         p, expected, actual,
       )
     }
+
+    if err == nil {
+      actual := b.Length()
+      expected := p
+
+      if !bitpos.IsEqual(actual, expected) {
+        t.Errorf(
+          "SetLength(%d): expected length to be %v, got %v",
+          p, expected, actual,
+        )
+      }
+    }
   }
+
+  t.Run("zeros bits outside of the length", func(t *testing.T) {
+    l := int8(5)
+    b := bitstr.New( []byte{ 0xff } )
+    p := bitpos.New( 0, l )
+
+    b.SetLength(p)
+
+    actual := b.Bytes()
+    expected := []byte{ 0xf8 }
+
+    if !bytes.Equal(actual, expected) {
+      t.Errorf(
+        "SetLength(%d): expected %08b, got %08b",
+        l, expected, actual,
+      )
+    }
+  })
 }
 
 func TestXORCompress(t *testing.T) {

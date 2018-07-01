@@ -28,7 +28,7 @@ func New(bytes []byte) BitString {
   b := make([]byte, l, l)
   copy(b, bytes)
 
-  s := BitString{ b, bitpos.New(uint32(l), 0) }
+  s := BitString{ b, bitpos.New(int64(l), 0) }
   return s
 }
 
@@ -42,10 +42,13 @@ func (s BitString) Length() bitpos.BitPosition {
   return s.length
 }
 
-func (s BitString) SetLength(p bitpos.BitPosition) error {
+func (s *BitString) SetLength(p bitpos.BitPosition) error {
   if p.Sign() == -1 {
     return errors.New("length cannot be negative")
   }
+  s.length = p
+  s.zeroExtraBits()
+  return nil
 }
 
 // func (s BitString) SplitBy(window_size uint16) []BitString {
@@ -197,7 +200,7 @@ func (s *BitString) zeroExtraBits() {
   }
 
   if bits := s.length.BitOffset(); bits > 0 {
-    off := bitpos.C - bits
+    off := uint64(bitpos.C - bits)
     s.bytes[n-1] = s.bytes[n-1] >> off << off
   }
 }

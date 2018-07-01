@@ -41,8 +41,9 @@ func (p BitPosition) BitOffset() int64 {
   return r.Int64()
 }
 
-// CeilByteOffset returns the byte index that the bit position corresponds
-// to, or 1 greater.
+// CeilByteOffset takes the absolute value bit index and returns the
+// the ceiling byte offset that it would correspond to. This is primarily
+// used for determining the correct byte slice size for a given bit string.
 //
 // When the bit position divided by the "byte bit count" is still greater than
 // a 64-bit value, overflow could occur, and this should be dealt with.
