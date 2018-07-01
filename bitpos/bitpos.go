@@ -16,10 +16,10 @@ func IsEqual(a, b BitPosition) bool {
 }
 
 // New allocates and returns a new BitPosition.
-func New(byteOffset int64, bitOffset int8) BitPosition {
+func New(byteOffset int64, bitOffset int64) BitPosition {
   p := big.NewInt(C)
   p.Mul(p, big.NewInt(byteOffset))
-  p.Add(p, big.NewInt(int64(bitOffset)))
+  p.Add(p, big.NewInt(bitOffset))
   return BitPosition{ p }
 }
 

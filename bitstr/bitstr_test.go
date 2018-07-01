@@ -148,8 +148,7 @@ var tblXORCompress = []struct {
 }
 
 var tblSetLength = []struct {
-  byteOffset int64
-  bitOffset int8
+  byteOffset, bitOffset int64
   hasError bool
 }{
   {-1, 0, true},
@@ -188,7 +187,7 @@ func TestSetLength(t *testing.T) {
   }
 
   t.Run("zeros bits outside of the length", func(t *testing.T) {
-    l := int8(5)
+    l := int64(5)
     b := bitstr.New( []byte{ 0xff } )
     p := bitpos.New( 0, l )
 

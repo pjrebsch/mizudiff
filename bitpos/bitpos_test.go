@@ -17,8 +17,8 @@ func TestIsEqual(t *testing.T) {
 }
 
 var tblNew = []struct {
-  x1 int64; x2 int8  // byte offset inputs
-  r  int64           // expectation
+  x1, x2 int64  // byte offset inputs
+  r  int64      // expectation
 }{
   {0, 0,  0},
   {0, 1,  1},
@@ -46,9 +46,9 @@ func TestNew(t *testing.T) {
 }
 
 var tblPlus = []struct {
-  x1 int64; x2 int8  // byte offset inputs
-  y1 int64; y2 int8  // bit offset inputs
-  r  int64           // expectation
+  x1, x2 int64  // byte offset inputs
+  y1, y2 int64  // byte offset inputs
+  r  int64      // expectation
 }{
   {0,0, 0,0,  0},
   {1,2, 3,4,  38},
@@ -82,9 +82,9 @@ func TestPlus(t *testing.T) {
 }
 
 var tblMinus = []struct {
-  x1 int64; x2 int8  // byte offset inputs
-  y1 int64; y2 int8  // bit offset inputs
-  r  int64           // expectation
+  x1, x2 int64  // byte offset inputs
+  y1, y2 int64  // bit offset inputs
+  r  int64      // expectation
 }{
   {0,0, 0,0,  0},
   {1,2, 3,4,  -18},
@@ -113,8 +113,8 @@ func TestMinus(t *testing.T) {
 }
 
 var tblCeilByteOffset = []struct {
-  x1 int64; x2 int8  // byte offset inputs
-  r  uint64          // expectation
+  x1, x2 int64  // byte offset inputs
+  r  uint64     // expectation
 }{
   {0,0, 0},
   {0,1, 1},
