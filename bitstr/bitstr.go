@@ -10,17 +10,8 @@ import (
 )
 
 type BitString struct {
-  bytes []byte
-
-  // Bit length of the string.
-  length bitpos.BitPosition
-
-  // Bit offset from the start of bytes where the string is considered to begin.
-  // This value may be anything. If this value is negative, the bits preceding
-  // the byte data are considered to be zeros. Similary, if this value or it
-  // plus the length exceeds the end of the byte data, the proceeding bits are
-  // considered to be zeros.
-  // offset bitpos.BitPosition
+  bytes []byte  // raw data
+  length bitpos.BitPosition  // bit length of the string
 }
 
 func New(bytes []byte) BitString {
