@@ -38,7 +38,8 @@ func (s *BitString) SetLength(p bitpos.BitPosition) error {
     return errors.New("length cannot be negative")
   }
   s.length = p
-  s.trim()
+  s.updateDataSize()
+  s.zeroExtraBits()
   return nil
 }
 
@@ -184,7 +185,7 @@ func (s *BitString) SetLength(p bitpos.BitPosition) error {
 //   fmt.Printf("%s\n", bytestr)
 // }
 
-func (s *BitString) trim() {
+func (s *BitString) updateDataSize() {
   l := s.length.CeilByteOffset()
   n := uint64(len(s.bytes))
 
@@ -194,8 +195,6 @@ func (s *BitString) trim() {
     copy(buf, s.bytes[:least])
     s.bytes = buf
   }
-
-  s.zeroExtraBits()
 }
 
 func (s *BitString) zeroExtraBits() {
