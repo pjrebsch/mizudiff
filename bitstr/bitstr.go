@@ -16,7 +16,7 @@ type BitString struct {
 
 func New(bytes []byte) BitString {
   l := len(bytes)
-  b := make([]byte, l, l)
+  b := make([]byte, l)
   copy(b, bytes)
 
   s := BitString{ b, bitpos.New(int64(l), 0) }
@@ -43,7 +43,7 @@ func (s *BitString) SetLength(p bitpos.BitPosition) error {
   return nil
 }
 
-func (s BitString) XORCompress(adv, win uint8) (BitString, error) {
+func (s BitString) XORCompress(adv, win uint16) (BitString, error) {
   if adv > win {
     err := errors.New("advanceRate can't be greater than windowSize")
     return BitString{}, err
@@ -144,40 +144,46 @@ func (s BitString) XORCompress(adv, win uint8) (BitString, error) {
 //   //
 //   // return BitString{ buf, new_length }
 // }
-//
-// func (s BitString) slice(from, to bitpos.BitPosition) BitString {
-//   top := int(math.Max(0, float64(from.ByteOffset)))
-//   bot := int(math.Min(float64(len(s.Bytes)), float64(to.CeilByteOffset())))
-//
-//   real_length := to.Minus(from)
-//
-//   var out []byte
-//
-//   buf := s.Bytes[top:bot]
-//
-//   if from.BitOffset != 0 {
-//     // We have the bytes which contain the window that we are looking for,
-//     // but they are not offset properly.
-//
-//     out = make([]byte, real_length.CeilByteOffset())
-//
-//     for i := 0; i < len(buf); i += 2 {
-//       tmp := buf[i] << from.BitOffset
-//
-//       if i + 1 < len(buf) {
-//         tmp |= buf[i+1] >> (bitpos.C - from.BitOffset)
-//       }
-//
-//       out[i/2] = tmp
-//     }
-//   } else {
-//     out = buf
-//   }
-//
-//   // We should zero any bits in the bytes that are outside of the length.
-//   return New(out, real_length)
-// }
-//
+
+func (s BitString) Slice(from, length bitpos.BitPosition) (BitString, error) {
+  if length.Sign() == -1 {
+    return BitString{}, errors.New("length can't be less than zero")
+  }
+
+  buf := make([]byte, length.CeilByteOffset())
+  fromOffset := bitpos.New(0, 0)
+
+  // If the starting position is negative, then we need to make the buffer
+  // start with zero-bits for the offset of `from`.
+  if from.Sign() == -1 {
+    fromOffset.Abs(from.Int)
+  }
+
+  if from.BitOffset() == 0 {
+    // If there is no bit offset, the bytes can simply be copied.
+    copy(buf[fromOffset.ByteOffset():], s.bytes)
+  } else {
+    // But if there is a bit offset, then some extra work will need to be done.
+    for i := bitpos.New(0,0); i.Cmp(length.Int) == -1; {
+      shiftBy := uint8(fromOffset.BitOffset())
+      thisByte := s.bytes[i.ByteOffset()] << shiftBy
+
+      nextPart := byte(0x00)
+      if j := i.ByteOffset() + 1; j < int64(len(s.bytes)) {
+        nextPart = s.bytes[j] >> (bitpos.C - shiftBy)
+      }
+
+      buf[fromOffset.ByteOffset() + i.ByteOffset()] = thisByte | nextPart
+
+      i.Add(i.Int, bitpos.New(1,0).Int)
+    }
+  }
+
+  out := New(buf)
+  out.SetLength(length)
+  return out, nil
+}
+
 // func (s BitString) Debug() {
 //   str := fmt.Sprintf("%08b", s.Bytes)
 //   str = strings.Replace(str, " ", "", -1)
@@ -200,7 +206,7 @@ func (s *BitString) updateDataSize() {
 
   if l != n {
     least := uint64(math.Min(float64(l), float64(n)))
-    buf := make([]byte, l, l)
+    buf := make([]byte, l)
     copy(buf, s.bytes[:least])
     s.bytes = buf
   }

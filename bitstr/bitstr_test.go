@@ -174,11 +174,55 @@ func TestSetLength(t *testing.T) {
   })
 }
 
+func TestSlice(t *testing.T) {
+  t.Run("length can't be less than zero", func(t *testing.T) {
+    s := bitstr.New( []byte{} )
+    from := bitpos.New(0,0)
+    length := bitpos.New(0,-1)
+
+    _, err := s.Slice(from, length)
+    if err == nil {
+      t.Errorf(
+        "Slice(%d, %d): expected an error, but didn't get one",
+        from, length,
+      )
+    }
+  })
+
+  var tbl = []struct {
+    f1, f2 int64
+    l1, l2 int64
+    in, out []byte
+  }{
+    {0,0, 0,1, []byte{ 0xff }, []byte{ 0x80 }},
+  }
+  for _, e := range tbl {
+    s := bitstr.New(e.in)
+    from := bitpos.New(e.f1,e.f2)
+    length := bitpos.New(e.l1,e.l2)
+
+    result, err := s.Slice(from, length)
+    if err != nil {
+      t.Fatalf(
+        "Slice(%d, %d): errored: %v",
+        from, length, err,
+      )
+    }
+    if !bytes.Equal(result.Bytes(), e.out) {
+      t.Errorf(
+        "Slice(%d, %d): expected %08b, got %08b",
+        from, length, e.out, result.Bytes(),
+      )
+    }
+  }
+}
+
 func TestXORCompress(t *testing.T) {
   t.Run("advance rate can't be greater than window size", func(t *testing.T) {
     s := bitstr.New( []byte{} )
-    adv := uint8(2)
-    win := uint8(1)
+    adv := uint16(2)
+    win := uint16(1)
+
     _, err := s.XORCompress(adv, win)
     if err == nil {
       t.Errorf(
@@ -231,8 +275,8 @@ func TestXORCompress(t *testing.T) {
   // TODO: test empty byte slice as a special case where window size and
   // advance rate are irrelevant.
 
+  // TODO: actually test it
   for _, e := range tbl {
-    // TODO: actually test it
     t.Logf("%08b", e.in)
     t.Logf("%08b", e.out)
   }
