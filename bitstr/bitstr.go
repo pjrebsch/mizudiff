@@ -6,7 +6,7 @@ import (
   "math"
   "fmt"
   // "strings"
-  // "math/bits"
+  "math/bits"
 )
 
 type BitString struct {
@@ -177,7 +177,7 @@ func (s BitString) Slice(from, length bitpos.BitPosition) (BitString, error) {
     fromOffset.Abs(from.Int)
 
     bytesLen := int64(len(s.bytes))
-    bitOffset := uint8(fromOffset.BitOffset())
+    bitOffset := int(from.BitOffset())
 
     // Taking the ceiling byte offset and subtracting 1 allows this to work
     // for both positive and negative `from` byte positions.
@@ -187,19 +187,26 @@ func (s BitString) Slice(from, length bitpos.BitPosition) (BitString, error) {
     }
     byteOffset -= 1
 
+    masks := []byte{
+      0xff << uint8(fromOffset.BitOffset()),
+      0xff >> uint8(fromOffset.BitOffset()),
+    }
+
     for i := bitpos.New(0,0); i.Cmp(length.Int) == -1; {
       thisByte, nextPart := byte(0x00), byte(0x00)
       fmt.Println(byteOffset)
 
       if j := byteOffset; j >= 0 && j < bytesLen {
-        thisByte = s.bytes[j] << bitOffset
+        thisByte = bits.RotateLeft8(uint8(s.bytes[j]), bitOffset)
+        thisByte &= masks[0]
       }
-      fmt.Printf("%02x\n", thisByte)
+      fmt.Printf("%08b\n", thisByte)
       if j := byteOffset + 1; j >= 0 && j < bytesLen {
-        nextPart = s.bytes[j] >> (bitpos.C - bitOffset)
+        nextPart = bits.RotateLeft8(uint8(s.bytes[j]), -(bitpos.C - bitOffset))
+        nextPart &= masks[1]
       }
-      fmt.Printf("%02x\n", nextPart)
-      fmt.Printf("%02x\n", thisByte | nextPart)
+      fmt.Printf("%08b\n", nextPart)
+      fmt.Printf("%08b\n", thisByte | nextPart)
 
       buf[bufOffset.ByteOffset() + i.ByteOffset()] = thisByte | nextPart
 

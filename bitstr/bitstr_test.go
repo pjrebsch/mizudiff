@@ -204,6 +204,8 @@ func TestSlice(t *testing.T) {
     {-1,0, 1,0, []byte{ 0xff }, []byte{ 0x00 }},
     {-1,0, 2,0, []byte{ 0xff }, []byte{ 0x00, 0xff }},
     {-1,0, 3,0, []byte{ 0xff }, []byte{ 0x00, 0xff, 0x00 }},
+    {0,-3, 1,0, []byte{ 0x55 }, []byte{ 0x0a }},
+    {0,-3, 2,0, []byte{ 0x55 }, []byte{ 0x0a, 0xa0 }},
   }
   for _, e := range tbl {
     s := bitstr.New(e.in)
