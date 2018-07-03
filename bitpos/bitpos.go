@@ -1,6 +1,8 @@
 package bitpos
 
 import (
+  "errors"
+  "math"
   "math/big"
 )
 
@@ -44,14 +46,20 @@ func (p BitPosition) Minus(other BitPosition) BitPosition {
 // CeilByteOffset takes the absolute value bit index and returns the
 // the ceiling byte offset that it would correspond to. This is primarily
 // used for determining the correct byte slice size for a given bit string.
-//
-// When the bit position divided by the "byte bit count" is still greater than
-// a 64-bit value, overflow could occur, and this should be dealt with.
-func (p BitPosition) CeilByteOffset() uint64 {
-  r := initInt().Abs(p.Int)
+func (p BitPosition) CeilByteOffset() (int64, error) {
+  if p.Cmp(big.NewInt(math.MaxInt64)) >= 0 {
+    err := errors.New("reciever is greater than or equal to the max possible byte offset")
+    return 0, err
+  }
+  if p.Cmp(big.NewInt(math.MinInt64)) <= 0 {
+    err := errors.New("reciever is less than or equal to the min possible byte offset")
+    return 0, err
+  }
+
+  r := initInt().Add(initInt(), p.Int)
   r.Add(r, big.NewInt(C - 1))
   r.Div(r, big.NewInt(C))
-  return r.Uint64()
+  return r.Int64(), nil
 }
 
 func initInt() *big.Int {

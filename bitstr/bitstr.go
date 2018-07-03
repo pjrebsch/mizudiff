@@ -4,7 +4,7 @@ import (
   "github.com/pjrebsch/mizudiff/bitpos"
   "errors"
   "math"
-  // "fmt"
+  "fmt"
   // "strings"
   // "math/bits"
 )
@@ -38,7 +38,12 @@ func (s *BitString) SetLength(p bitpos.BitPosition) error {
     return errors.New("length cannot be negative")
   }
   s.length = p
-  s.updateDataSize()
+
+  err := s.updateDataSize()
+  if err != nil {
+    return err
+  }
+
   s.zeroExtraBits()
   return nil
 }
@@ -150,33 +155,58 @@ func (s BitString) Slice(from, length bitpos.BitPosition) (BitString, error) {
     return BitString{}, errors.New("length can't be less than zero")
   }
 
-  buf := make([]byte, length.CeilByteOffset())
-  fromOffset := bitpos.New(0, 0)
+  l, err := length.CeilByteOffset()
+  if err != nil {
+    return BitString{}, err
+  }
+
+  buf := make([]byte, l)
+  bufOffset := bitpos.New(0,0)
 
   // If the starting position is negative, then we need to make the buffer
   // start with zero-bits for the offset of `from`.
   if from.Sign() == -1 {
-    fromOffset.Abs(from.Int)
+    bufOffset.Abs(from.Int)
   }
 
   if from.BitOffset() == 0 {
     // If there is no bit offset, the bytes can simply be copied.
-    copy(buf[fromOffset.ByteOffset():], s.bytes)
+    copy(buf[bufOffset.ByteOffset():], s.bytes)
   } else {
-    // But if there is a bit offset, then some extra work will need to be done.
+    fromOffset := bitpos.New(0,0)
+    fromOffset.Abs(from.Int)
+
+    bytesLen := int64(len(s.bytes))
+    bitOffset := uint8(fromOffset.BitOffset())
+
+    // Taking the ceiling byte offset and subtracting 1 allows this to work
+    // for both positive and negative `from` byte positions.
+    byteOffset, err := from.CeilByteOffset()
+    if err != nil {
+      return BitString{}, err
+    }
+    byteOffset -= 1
+
     for i := bitpos.New(0,0); i.Cmp(length.Int) == -1; {
-      shiftBy := uint8(fromOffset.BitOffset())
-      thisByte := s.bytes[i.ByteOffset()] << shiftBy
+      thisByte, nextPart := byte(0x00), byte(0x00)
+      fmt.Println(byteOffset)
 
-      nextPart := byte(0x00)
-      if j := i.ByteOffset() + 1; j < int64(len(s.bytes)) {
-        nextPart = s.bytes[j] >> (bitpos.C - shiftBy)
+      if j := byteOffset; j >= 0 && j < bytesLen {
+        thisByte = s.bytes[j] << bitOffset
       }
+      fmt.Printf("%02x\n", thisByte)
+      if j := byteOffset + 1; j >= 0 && j < bytesLen {
+        nextPart = s.bytes[j] >> (bitpos.C - bitOffset)
+      }
+      fmt.Printf("%02x\n", nextPart)
+      fmt.Printf("%02x\n", thisByte | nextPart)
 
-      buf[fromOffset.ByteOffset() + i.ByteOffset()] = thisByte | nextPart
+      buf[bufOffset.ByteOffset() + i.ByteOffset()] = thisByte | nextPart
 
       i.Add(i.Int, bitpos.New(1,0).Int)
+      byteOffset += 1
     }
+    fmt.Println()
   }
 
   out := New(buf)
@@ -200,9 +230,12 @@ func (s BitString) Slice(from, length bitpos.BitPosition) (BitString, error) {
 //   fmt.Printf("%s\n", bytestr)
 // }
 
-func (s *BitString) updateDataSize() {
-  l := s.length.CeilByteOffset()
-  n := uint64(len(s.bytes))
+func (s *BitString) updateDataSize() error {
+  n := int64(len(s.bytes))
+  l, err := s.length.CeilByteOffset()
+  if err != nil {
+    return err
+  }
 
   if l != n {
     least := uint64(math.Min(float64(l), float64(n)))
@@ -210,6 +243,7 @@ func (s *BitString) updateDataSize() {
     copy(buf, s.bytes[:least])
     s.bytes = buf
   }
+  return nil
 }
 
 func (s *BitString) zeroExtraBits() {

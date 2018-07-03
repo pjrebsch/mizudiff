@@ -18,7 +18,7 @@ func TestIsEqual(t *testing.T) {
 
 var tblNew = []struct {
   x1, x2 int64  // byte offset inputs
-  r  int64      // expectation
+  r int64       // expectation
 }{
   {0, 0,  0},
   {0, 1,  1},
@@ -91,7 +91,7 @@ func TestBitOffset(t *testing.T) {
 var tblPlus = []struct {
   x1, x2 int64  // byte offset inputs
   y1, y2 int64  // byte offset inputs
-  r  int64      // expectation
+  r int64       // expectation
 }{
   {0,0, 0,0,  0},
   {1,2, 3,4,  38},
@@ -127,7 +127,7 @@ func TestPlus(t *testing.T) {
 var tblMinus = []struct {
   x1, x2 int64  // byte offset inputs
   y1, y2 int64  // bit offset inputs
-  r  int64      // expectation
+  r int64       // expectation
 }{
   {0,0, 0,0,  0},
   {1,2, 3,4,  -18},
@@ -155,26 +155,53 @@ func TestMinus(t *testing.T) {
   }
 }
 
-var tblCeilByteOffset = []struct {
-  x1, x2 int64  // byte offset inputs
-  r  uint64     // expectation
-}{
-  {0,0, 0},
-  {0,1, 1},
-  {1,0, 1},
-  {1,1, 2},
-  {2,7, 3},
-  {math.MaxInt32,  bitpos.C - 1, math.MaxInt32 + 1},
-  {0,-1, 1},
-  {-1,-1, 2},
-  {math.MinInt32, -bitpos.C + 1, math.MaxInt32 + 2},
-}
 func TestCeilByteOffset(t *testing.T) {
-  for _, e := range tblCeilByteOffset {
+  t.Run("bit position can't overflow int64", func(t *testing.T) {
+    var tbl = []struct {
+      x1, x2 int64  // inputs
+    }{
+      {math.MaxInt64, bitpos.C - 1},
+      {math.MinInt64, -bitpos.C + 1},
+      {math.MaxInt64 / bitpos.C + 1, bitpos.C - 1},
+      {math.MinInt64 / bitpos.C - 1, -bitpos.C + 1},
+    }
+    for _, e := range tbl {
+      x := bitpos.New(e.x1, e.x2)
+      _, err := x.CeilByteOffset()
+
+      if err == nil {
+        t.Errorf(
+          "%d.CeilByteOffset(): expected an error, but didn't get one",
+          x,
+        )
+      }
+    }
+  })
+
+  var tbl = []struct {
+    x1, x2 int64  // byte offset inputs
+    r int64       // expectation
+  }{
+    {0,0, 0},
+    {0,1, 1},
+    {1,0, 1},
+    {1,1, 2},
+    {2,7, 3},
+    {0,-1, 0},
+    {-1,-1, -1},
+  }
+  for _, e := range tbl {
     x := bitpos.New( e.x1, e.x2 )
 
-    actual := x.CeilByteOffset()
+    actual, err := x.CeilByteOffset()
     expected := e.r
+
+    if err != nil {
+      t.Errorf(
+        "%d.CeilByteOffset(): didn't expect an error, but got one: %v",
+        x, err,
+      )
+    }
 
     if actual != expected {
       t.Errorf(
