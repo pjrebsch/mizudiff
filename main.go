@@ -140,51 +140,6 @@ func prettyDiffComparison(diff []byte) {
   fmt.Print("\n\n")
 }
 
-// Assumes that bit_pos is zero-based.
-func bytePositionToNearestBitPosition(src []byte, bit_pos int) int {
-  return bit_pos / (bitpos.C - 1)
-}
-
-func calculateNewLength(element_count, element_length, advance_rate uint) uint {
-	return element_count * element_length - (element_length - advance_rate) * (element_count - 1)
-}
-
-func xorCompress(in []byte) []byte {
-  var advance_rate uint = 3
-  var window_size uint16 = 8
-
-  root := bitstr.New(in, bitpos.New(uint(len(in)), 0))
-  slices := root.SplitBy(window_size)
-
-  new_bit_count := calculateNewLength(uint(len(slices)), uint(window_size), advance_rate)
-  new_length := bitpos.New(0, new_bit_count)
-
-  out := make([]byte, new_length.CeilByteOffset())
-
-  for i := 0; i < len(slices); i += 1 {
-    pos := bitpos.New(0, uint(i) * advance_rate)
-
-    prefix := make([]byte, uint(i) * advance_rate)
-    for d := range prefix {
-      prefix[d] = ' '
-    }
-    fmt.Printf("%s", prefix)
-    slices[i].Debug()
-
-    for j, b := range slices[i].Bytes {
-      k := pos.ByteOffset + uint(j)
-
-      out[k] ^= b >> pos.BitOffset
-
-      if pos.BitOffset > 0 {
-        out[k+1] |= b << (bitpos.C - pos.BitOffset)
-      }
-    }
-  }
-
-  return out
-}
-
 func main() {
   log.Println("Go-ing...")
   a, b := loadSources()
