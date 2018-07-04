@@ -197,12 +197,11 @@ func TestCeilByteOffset(t *testing.T) {
     expected := e.r
 
     if err != nil {
-      t.Errorf(
+      t.Fatalf(
         "%d.CeilByteOffset(): didn't expect an error, but got one: %v",
         x, err,
       )
     }
-
     if actual != expected {
       t.Errorf(
         "%d.CeilByteOffset(): expected %d, got %d",
