@@ -60,8 +60,7 @@ func (p BitPosition) CeilByteOffset() (int64, error) {
     return 0, err
   }
 
-  r := Zero().Add(Zero().Int, p.Int)
-  r.Add(r, big.NewInt(C - 1))
+  r := Zero().Add(p.Int, big.NewInt(C - 1))
   r.Div(r, big.NewInt(C))
   return r.Int64(), nil
 }
