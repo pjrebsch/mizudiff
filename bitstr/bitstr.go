@@ -67,43 +67,43 @@ func (s BitString) Slice(from, length bitpos.BitPosition) (BitString, error) {
     bufOff.Abs(from.Int)
   }
 
-  if from.BitOffset() == 0 {
-    // If there is no bit offset, the bytes can simply be copied.
-    copy(buf[bufOff.ByteOffset():], s.bytes)
-  } else {
-    bytesLen := uint64(len(s.bytes))
+  bytesLen := uint64(len(s.bytes))
 
-    fromAbs := bitpos.Zero()
-    fromAbs.Abs(from.Int)
-    bitOff := uint8(fromAbs.BitOffset())
+  fromAbs := bitpos.Zero()
+  fromAbs.Abs(from.Int)
+  bitOff := uint8(fromAbs.BitOffset())
 
-    for byteOff := uint64(0); bufOff.Cmp(length.Int) == -1; byteOff += 1 {
-      thisPart, savedPart := byte(0x00), byte(0x00)
+  byteOff := uint64(0)
+  if from.Sign() == 1 {
+    byteOff = uint64(from.ByteOffset())
+  }
 
-      if j := byteOff; j >= 0 && j < bytesLen {
-        thisPart = s.bytes[j]
+  for ; bufOff.Cmp(length.Int) == -1; byteOff += 1 {
+    thisPart, savedPart := byte(0x00), byte(0x00)
 
-        if from.Sign() == -1 {
-          thisPart >>= bitOff
-        } else {
-          thisPart <<= bitOff
-        }
-      }
+    if j := byteOff; j >= 0 && j < bytesLen {
+      thisPart = s.bytes[j]
 
       if from.Sign() == -1 {
-        if j := byteOff - 1; j >= 0 && j < bytesLen {
-          savedPart = s.bytes[j] << (bitpos.C - bitOff)
-        }
+        thisPart >>= bitOff
       } else {
-        if j := byteOff + 1; j >= 0 && j < bytesLen {
-          savedPart = s.bytes[j] >> (bitpos.C - bitOff)
-        }
+        thisPart <<= bitOff
       }
-
-      buf[bufOff.ByteOffset()] = thisPart | savedPart
-
-      bufOff.Add(bufOff.Int, bitpos.New(1,0).Int)
     }
+
+    if from.Sign() == -1 {
+      if j := byteOff - 1; j >= 0 && j < bytesLen {
+        savedPart = s.bytes[j] << (bitpos.C - bitOff)
+      }
+    } else {
+      if j := byteOff + 1; j >= 0 && j < bytesLen {
+        savedPart = s.bytes[j] >> (bitpos.C - bitOff)
+      }
+    }
+
+    buf[bufOff.ByteOffset()] = thisPart | savedPart
+
+    bufOff.Add(bufOff.Int, bitpos.New(1,0).Int)
   }
 
   out := New(buf)

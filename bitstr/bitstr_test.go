@@ -206,6 +206,7 @@ func TestSlice(t *testing.T) {
     {-1,0, 3,0, []byte{ 0xff }, []byte{ 0x00, 0xff, 0x00 }},
     {0,-3, 1,0, []byte{ 0x55 }, []byte{ 0x0a }},
     {0,-3, 2,0, []byte{ 0x66 }, []byte{ 0x0c, 0xc0 }},
+    {1,0, 2,0, []byte{ 0xff, 0xff }, []byte{ 0xff, 0x00 }},
     {
       -2,-2,  4,7,
       []byte{ 0xd2, 0xbf, 0x78, 0xae },  // 11010010 10111111 01111000 10101110
