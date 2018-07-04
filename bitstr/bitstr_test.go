@@ -359,14 +359,24 @@ func TestXORCompress(t *testing.T) {
     },
   }
 
-  // TODO: actually test it
   for _, e := range tbl {
-    t.Logf("%08b", e.in)
-    t.Logf("%08b", e.out)
+    s, err := bitstr.New(e.in).XORCompress( e.advanceRate, e.windowSize )
+    if err != nil {
+      t.Fatalf(
+        "XORCompress(%d, %d): did not expect an error, but got one: %v",
+        e.advanceRate, e.windowSize, err,
+      )
+    }
 
-    s := bitstr.New( e.in )
+    actual := s.Bytes()
+    expected := e.out
 
-    s.XORCompress( e.advanceRate, e.windowSize )
+    if !bytes.Equal(actual, expected) {
+      t.Errorf(
+        "XORCompress(%d, %d): expected %08b, got %08b",
+        e.advanceRate, e.windowSize, expected, actual,
+      )
+    }
   }
 }
 

@@ -151,11 +151,51 @@ func (s BitString) XORCompress(adv, win uint16) (BitString, error) {
     return BitString{}, err
   }
 
-  buf := make([]byte, l)
+  out := make([]byte, l)
 
-  // TODO
+  // Bit index for `out`.
+  i := bitpos.Zero()
 
-  r := New(buf)
+  // Bit index for `s.bytes`.
+  j := bitpos.Zero()
+
+  for ; j.Cmp(s.Length().Int) == -1; {
+    slice, err := s.Slice(j, winSize)
+    if err != nil {
+      return BitString{}, err
+    }
+    window := slice.bytes
+
+    // Add a byte to the end of the buffer so that shifting right preserves
+    // the latter bits.
+    window = append(window, byte(0x00))
+
+    // Only shift the bytes by the bit offset for `out`. The byte offset
+    // will be taken care of later.
+    bitOff := bitpos.New(0, i.BitOffset())
+    shifted, err := New(window).Shift(bitOff)
+    if err != nil {
+      return BitString{}, err
+    }
+    buf := shifted.bytes
+
+    // Byte index for `buf`.
+    m := int64(0)
+
+    // Byte index for `out`.
+    n := m + i.ByteOffset()
+
+    for ; m < int64(len(buf)) && n < int64(len(out)); {
+      out[n] ^= buf[m]
+      m++
+      n++
+    }
+
+    i = i.Plus(advRate)
+    j = j.Plus(winSize)
+  }
+
+  r := New(out)
   r.SetLength(length)
   return r, nil
 }
