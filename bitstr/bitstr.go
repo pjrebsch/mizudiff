@@ -177,18 +177,18 @@ func (s BitString) Slice(from, length bitpos.BitPosition) (BitString, error) {
 
     fromAbs := bitpos.Zero()
     fromAbs.Abs(from.Int)
-    bitOff := uint(fromAbs.BitOffset())
+    bitOff := uint8(fromAbs.BitOffset())
 
     for byteOff := uint64(0); bufOff.Cmp(length.Int) == -1; byteOff += 1 {
-      thisByte, savedPart := byte(0x00), byte(0x00)
+      thisPart, savedPart := byte(0x00), byte(0x00)
 
       if j := byteOff; j >= 0 && j < bytesLen {
-        thisByte = s.bytes[j]
+        thisPart = s.bytes[j]
 
         if from.Sign() == -1 {
-          thisByte >>= bitOff
+          thisPart >>= bitOff
         } else {
-          thisByte <<= bitOff
+          thisPart <<= bitOff
         }
       }
 
@@ -202,7 +202,7 @@ func (s BitString) Slice(from, length bitpos.BitPosition) (BitString, error) {
         }
       }
 
-      buf[bufOff.ByteOffset()] = thisByte | savedPart
+      buf[bufOff.ByteOffset()] = thisPart | savedPart
 
       bufOff.Add(bufOff.Int, bitpos.New(1,0).Int)
     }
