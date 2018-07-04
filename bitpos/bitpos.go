@@ -18,7 +18,7 @@ func IsEqual(a, b BitPosition) bool {
 }
 
 // New allocates and returns a new BitPosition.
-func New(byteOffset int64, bitOffset int64) BitPosition {
+func New(byteOffset, bitOffset int64) BitPosition {
   p := big.NewInt(C)
   p.Mul(p, big.NewInt(byteOffset))
   p.Add(p, big.NewInt(bitOffset))
@@ -45,6 +45,14 @@ func (p BitPosition) Plus(other BitPosition) BitPosition {
 
 func (p BitPosition) Minus(other BitPosition) BitPosition {
   return BitPosition{ Zero().Sub(p.Int, other.Int) }
+}
+
+func (p BitPosition) DividedBy(other BitPosition) BitPosition {
+  return BitPosition{ Zero().Div(p.Int, other.Int) }
+}
+
+func (p BitPosition) MultipliedBy(other BitPosition) BitPosition {
+  return BitPosition{ Zero().Mul(p.Int, other.Int) }
 }
 
 // CeilByteOffset takes the absolute value bit index and returns the

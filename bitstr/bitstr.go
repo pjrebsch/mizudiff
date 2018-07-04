@@ -49,12 +49,44 @@ func (s *BitString) SetLength(p bitpos.BitPosition) error {
 }
 
 func (s BitString) XORCompress(adv, win uint16) (BitString, error) {
+  if adv == 0 {
+    return BitString{}, errors.New("advance rate must be greater than zero")
+  }
+  if win == 0 {
+    return BitString{}, errors.New("window size must be greater than zero")
+  }
   if adv > win {
-    err := errors.New("advanceRate can't be greater than windowSize")
+    err := errors.New("advance rate can't be greater than window size")
     return BitString{}, err
   }
 
-  return BitString{}, nil
+  if len(s.bytes) == 0 {
+    return BitString{}, nil
+  }
+
+  advRate := bitpos.New(0, int64(adv))
+  winSize := bitpos.New(0, int64(win))
+
+  windows := s.Length().DividedBy(winSize)
+
+  // This isn't true growth, because the first window never grows.
+  growth := windows.MultipliedBy(advRate)
+
+  // Correct the growth to get the real length.
+  length := growth.Minus(advRate).Plus(winSize)
+
+  l, err := length.CeilByteOffset()
+  if err != nil {
+    return BitString{}, err
+  }
+
+  buf := make([]byte, l)
+
+  // TODO
+
+  r := New(buf)
+  r.SetLength(length)
+  return r, nil
 }
 
 // func (s BitString) SplitBy(window_size uint16) []BitString {

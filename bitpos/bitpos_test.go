@@ -155,6 +155,68 @@ func TestMinus(t *testing.T) {
   }
 }
 
+func TestDividedBy(t *testing.T) {
+  var tbl = []struct {
+    x1, x2 int64  // byte offset inputs
+    y1, y2 int64  // bit offset inputs
+    r1, r2 int64  // expectation
+  }{
+    {0,1, 0,1, 0,1},
+    {1,0, 0,1, 1,0},
+    {0,3, 0,2, 0,1},
+    {0,1, 0,2, 0,0},
+    {1,0, 0,2, 0,4},
+    {-1,0, 0,1, -1,0},
+    {-2,1, 0,2, -1,0},
+    {-3,7, -1,0, 0,3},
+  }
+  for _, e := range tbl {
+    x := bitpos.New( e.x1, e.x2 )
+    y := bitpos.New( e.y1, e.y2 )
+
+    actual := x.DividedBy(y)
+    expected := bitpos.New( e.r1, e.r2 )
+
+    if !bitpos.IsEqual(actual, expected) {
+      t.Errorf(
+        "%d.DividedBy(%d): expected %d, got %d",
+        x, y, expected, actual,
+      )
+    }
+  }
+}
+
+func TestMultipliedBy(t *testing.T) {
+  var tbl = []struct {
+    x1, x2 int64  // byte offset inputs
+    y1, y2 int64  // bit offset inputs
+    r1, r2 int64  // expectation
+  }{
+    {0,1, 0,1, 0,1},
+    {1,0, 0,1, 1,0},
+    {0,3, 0,2, 0,6},
+    {0,1, 0,2, 0,2},
+    {1,0, 0,2, 2,0},
+    {-1,0, 0,1, -1,0},
+    {-2,1, 0,2, -4,2},
+    {-3,7, -1,0, 17,0},
+  }
+  for _, e := range tbl {
+    x := bitpos.New( e.x1, e.x2 )
+    y := bitpos.New( e.y1, e.y2 )
+
+    actual := x.MultipliedBy(y)
+    expected := bitpos.New( e.r1, e.r2 )
+
+    if !bitpos.IsEqual(actual, expected) {
+      t.Errorf(
+        "%d.MultipliedBy(%d): expected %d, got %d",
+        x, y, expected, actual,
+      )
+    }
+  }
+}
+
 func TestCeilByteOffset(t *testing.T) {
   t.Run("bit position can't overflow int64", func(t *testing.T) {
     var tbl = []struct {
