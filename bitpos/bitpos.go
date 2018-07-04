@@ -25,6 +25,10 @@ func New(byteOffset int64, bitOffset int64) BitPosition {
   return BitPosition{ p }
 }
 
+func Zero() BitPosition {
+  return BitPosition{ big.NewInt(0) }
+}
+
 func (p BitPosition) ByteOffset() int64 {
   r := initInt().Div(p.Int, big.NewInt(C))
   return r.Int64()

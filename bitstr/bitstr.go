@@ -6,7 +6,7 @@ import (
   "math"
   "fmt"
   // "strings"
-  "math/bits"
+  // "math/bits"
 )
 
 type BitString struct {
@@ -161,59 +161,52 @@ func (s BitString) Slice(from, length bitpos.BitPosition) (BitString, error) {
   }
 
   buf := make([]byte, l)
-  bufOffset := bitpos.New(0,0)
+  bufOff := bitpos.New(0,0)
 
   // If the starting position is negative, then we need to make the buffer
   // start with zero-bits for the offset of `from`.
   if from.Sign() == -1 {
-    bufOffset.Abs(from.Int)
+    bufOff.Abs(from.Int)
   }
 
   if from.BitOffset() == 0 {
     // If there is no bit offset, the bytes can simply be copied.
-    copy(buf[bufOffset.ByteOffset():], s.bytes)
+    copy(buf[bufOff.ByteOffset():], s.bytes)
   } else {
-    fromOffset := bitpos.New(0,0)
-    fromOffset.Abs(from.Int)
+    bytesLen := uint64(len(s.bytes))
 
-    bytesLen := int64(len(s.bytes))
-    bitOffset := int(from.BitOffset())
+    fromAbs := bitpos.Zero()
+    fromAbs.Abs(from.Int)
+    bitOff := uint(fromAbs.BitOffset())
 
-    // Taking the ceiling byte offset and subtracting 1 allows this to work
-    // for both positive and negative `from` byte positions.
-    byteOffset, err := from.CeilByteOffset()
-    if err != nil {
-      return BitString{}, err
-    }
-    byteOffset -= 1
+    for byteOff := uint64(0); bufOff.Cmp(length.Int) == -1; byteOff += 1 {
+      fmt.Println(from, length, bufOff.ByteOffset(), byteOff)
+      thisByte, savedPart := byte(0x00), byte(0x00)
 
-    masks := []byte{
-      0xff << uint8(fromOffset.BitOffset()),
-      0xff >> uint8(fromOffset.BitOffset()),
-    }
+      if j := byteOff; j >= 0 && j < bytesLen {
+        thisByte = s.bytes[j]
 
-    for i := bitpos.New(0,0); i.Cmp(length.Int) == -1; {
-      thisByte, nextPart := byte(0x00), byte(0x00)
-      fmt.Println(byteOffset)
-
-      if j := byteOffset; j >= 0 && j < bytesLen {
-        thisByte = bits.RotateLeft8(uint8(s.bytes[j]), bitOffset)
-        thisByte &= masks[0]
+        if from.Sign() == -1 {
+          thisByte >>= bitOff
+        } else {
+          thisByte <<= bitOff
+        }
       }
-      fmt.Printf("%08b\n", thisByte)
-      if j := byteOffset + 1; j >= 0 && j < bytesLen {
-        nextPart = bits.RotateLeft8(uint8(s.bytes[j]), -(bitpos.C - bitOffset))
-        nextPart &= masks[1]
+
+      if from.Sign() == -1 {
+        if j := byteOff - 1; j >= 0 && j < bytesLen {
+          savedPart = s.bytes[j] << (bitpos.C - bitOff)
+        }
+      } else {
+        if j := byteOff + 1; j >= 0 && j < bytesLen {
+          savedPart = s.bytes[j] >> (bitpos.C - bitOff)
+        }
       }
-      fmt.Printf("%08b\n", nextPart)
-      fmt.Printf("%08b\n", thisByte | nextPart)
 
-      buf[bufOffset.ByteOffset() + i.ByteOffset()] = thisByte | nextPart
+      buf[bufOff.ByteOffset()] = thisByte | savedPart
 
-      i.Add(i.Int, bitpos.New(1,0).Int)
-      byteOffset += 1
+      bufOff.Add(bufOff.Int, bitpos.New(1,0).Int)
     }
-    fmt.Println()
   }
 
   out := New(buf)
