@@ -256,7 +256,7 @@ func TestShift(t *testing.T) {
 
     b, err := a.Shift(off)
     if err != nil {
-      t.Errorf(
+      t.Fatalf(
         "Shift(%d): did not expect an error, but got one: %v",
         off, err,
       )
