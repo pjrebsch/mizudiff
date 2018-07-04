@@ -48,6 +48,69 @@ func (s *BitString) SetLength(p bitpos.BitPosition) error {
   return nil
 }
 
+func (s BitString) Slice(from, length bitpos.BitPosition) (BitString, error) {
+  if length.Sign() == -1 {
+    return BitString{}, errors.New("length can't be less than zero")
+  }
+
+  l, err := length.CeilByteOffset()
+  if err != nil {
+    return BitString{}, err
+  }
+
+  buf := make([]byte, l)
+  bufOff := bitpos.Zero()
+
+  // If the starting position is negative, then we need to make the buffer
+  // start with zero-bits for the offset of `from`.
+  if from.Sign() == -1 {
+    bufOff.Abs(from.Int)
+  }
+
+  if from.BitOffset() == 0 {
+    // If there is no bit offset, the bytes can simply be copied.
+    copy(buf[bufOff.ByteOffset():], s.bytes)
+  } else {
+    bytesLen := uint64(len(s.bytes))
+
+    fromAbs := bitpos.Zero()
+    fromAbs.Abs(from.Int)
+    bitOff := uint8(fromAbs.BitOffset())
+
+    for byteOff := uint64(0); bufOff.Cmp(length.Int) == -1; byteOff += 1 {
+      thisPart, savedPart := byte(0x00), byte(0x00)
+
+      if j := byteOff; j >= 0 && j < bytesLen {
+        thisPart = s.bytes[j]
+
+        if from.Sign() == -1 {
+          thisPart >>= bitOff
+        } else {
+          thisPart <<= bitOff
+        }
+      }
+
+      if from.Sign() == -1 {
+        if j := byteOff - 1; j >= 0 && j < bytesLen {
+          savedPart = s.bytes[j] << (bitpos.C - bitOff)
+        }
+      } else {
+        if j := byteOff + 1; j >= 0 && j < bytesLen {
+          savedPart = s.bytes[j] >> (bitpos.C - bitOff)
+        }
+      }
+
+      buf[bufOff.ByteOffset()] = thisPart | savedPart
+
+      bufOff.Add(bufOff.Int, bitpos.New(1,0).Int)
+    }
+  }
+
+  out := New(buf)
+  out.SetLength(length)
+  return out, nil
+}
+
 func (s BitString) XORCompress(adv, win uint16) (BitString, error) {
   if adv == 0 {
     return BitString{}, errors.New("advance rate must be greater than zero")
@@ -181,70 +244,7 @@ func (s BitString) XORCompress(adv, win uint16) (BitString, error) {
 //   //
 //   // return BitString{ buf, new_length }
 // }
-
-func (s BitString) Slice(from, length bitpos.BitPosition) (BitString, error) {
-  if length.Sign() == -1 {
-    return BitString{}, errors.New("length can't be less than zero")
-  }
-
-  l, err := length.CeilByteOffset()
-  if err != nil {
-    return BitString{}, err
-  }
-
-  buf := make([]byte, l)
-  bufOff := bitpos.Zero()
-
-  // If the starting position is negative, then we need to make the buffer
-  // start with zero-bits for the offset of `from`.
-  if from.Sign() == -1 {
-    bufOff.Abs(from.Int)
-  }
-
-  if from.BitOffset() == 0 {
-    // If there is no bit offset, the bytes can simply be copied.
-    copy(buf[bufOff.ByteOffset():], s.bytes)
-  } else {
-    bytesLen := uint64(len(s.bytes))
-
-    fromAbs := bitpos.Zero()
-    fromAbs.Abs(from.Int)
-    bitOff := uint8(fromAbs.BitOffset())
-
-    for byteOff := uint64(0); bufOff.Cmp(length.Int) == -1; byteOff += 1 {
-      thisPart, savedPart := byte(0x00), byte(0x00)
-
-      if j := byteOff; j >= 0 && j < bytesLen {
-        thisPart = s.bytes[j]
-
-        if from.Sign() == -1 {
-          thisPart >>= bitOff
-        } else {
-          thisPart <<= bitOff
-        }
-      }
-
-      if from.Sign() == -1 {
-        if j := byteOff - 1; j >= 0 && j < bytesLen {
-          savedPart = s.bytes[j] << (bitpos.C - bitOff)
-        }
-      } else {
-        if j := byteOff + 1; j >= 0 && j < bytesLen {
-          savedPart = s.bytes[j] >> (bitpos.C - bitOff)
-        }
-      }
-
-      buf[bufOff.ByteOffset()] = thisPart | savedPart
-
-      bufOff.Add(bufOff.Int, bitpos.New(1,0).Int)
-    }
-  }
-
-  out := New(buf)
-  out.SetLength(length)
-  return out, nil
-}
-
+//
 // func (s BitString) Debug() {
 //   str := fmt.Sprintf("%08b", s.Bytes)
 //   str = strings.Replace(str, " ", "", -1)
