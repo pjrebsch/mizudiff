@@ -111,6 +111,14 @@ func (s BitString) Slice(from, length bitpos.BitPosition) (BitString, error) {
   return out, nil
 }
 
+// Shift performs a bitwise shift on the bit string.
+// A positive offset shifts right, negative offset shifts left.
+func (s BitString) Shift(offset bitpos.BitPosition) (BitString, error) {
+  from := bitpos.Zero()
+  from.Neg(offset.Int)
+  return s.Slice(from, s.Length())
+}
+
 func (s BitString) XORCompress(adv, win uint16) (BitString, error) {
   if adv == 0 {
     return BitString{}, errors.New("advance rate must be greater than zero")

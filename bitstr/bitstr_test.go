@@ -234,6 +234,46 @@ func TestSlice(t *testing.T) {
   }
 }
 
+func TestShift(t *testing.T) {
+  var tbl = []struct {
+    x1, x2 int64
+    in, out []byte
+  }{
+    {0,1, []byte{ 0xff, 0xff }, []byte{ 0x7f, 0xff }},
+    {0,2, []byte{ 0xff, 0xff }, []byte{ 0x3f, 0xff }},
+    {0,4, []byte{ 0xff, 0xff }, []byte{ 0x0f, 0xff }},
+    {1,0, []byte{ 0xff, 0xff }, []byte{ 0x00, 0xff }},
+    {2,0, []byte{ 0xff, 0xff }, []byte{ 0x00, 0x00 }},
+    {0,-1, []byte{ 0xff, 0xff }, []byte{ 0xff, 0xfe }},
+    {0,-2, []byte{ 0xff, 0xff }, []byte{ 0xff, 0xfc }},
+    {0,-4, []byte{ 0xff, 0xff }, []byte{ 0xff, 0xf0 }},
+    {-1,0, []byte{ 0xff, 0xff }, []byte{ 0xff, 0x00 }},
+    {-2,0, []byte{ 0xff, 0xff }, []byte{ 0x00, 0x00 }},
+  }
+  for _, e := range tbl {
+    a := bitstr.New( e.in )
+    off := bitpos.New( e.x1, e.x2 )
+
+    b, err := a.Shift(off)
+    if err != nil {
+      t.Errorf(
+        "Shift(%d): did not expect an error, but got one: %v",
+        off, err,
+      )
+    }
+
+    actual := b.Bytes()
+    expected := e.out
+
+    if !bytes.Equal(actual, expected) {
+      t.Errorf(
+        "Shift(%d): expected %08b, got %08b",
+        off, expected, actual,
+      )
+    }
+  }
+}
+
 func TestXORCompress(t *testing.T) {
   t.Run("window size must be greater than zero", func(t *testing.T) {
     s := bitstr.New( []byte{} )
