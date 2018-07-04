@@ -4,7 +4,7 @@ import (
   "github.com/pjrebsch/mizudiff/bitpos"
   "errors"
   "math"
-  "fmt"
+  // "fmt"
   // "strings"
   // "math/bits"
 )
@@ -161,7 +161,7 @@ func (s BitString) Slice(from, length bitpos.BitPosition) (BitString, error) {
   }
 
   buf := make([]byte, l)
-  bufOff := bitpos.New(0,0)
+  bufOff := bitpos.Zero()
 
   // If the starting position is negative, then we need to make the buffer
   // start with zero-bits for the offset of `from`.
@@ -180,7 +180,6 @@ func (s BitString) Slice(from, length bitpos.BitPosition) (BitString, error) {
     bitOff := uint(fromAbs.BitOffset())
 
     for byteOff := uint64(0); bufOff.Cmp(length.Int) == -1; byteOff += 1 {
-      fmt.Println(from, length, bufOff.ByteOffset(), byteOff)
       thisByte, savedPart := byte(0x00), byte(0x00)
 
       if j := byteOff; j >= 0 && j < bytesLen {
