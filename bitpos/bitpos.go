@@ -30,21 +30,21 @@ func Zero() BitPosition {
 }
 
 func (p BitPosition) ByteOffset() int64 {
-  r := initInt().Div(p.Int, big.NewInt(C))
+  r := Zero().Div(p.Int, big.NewInt(C))
   return r.Int64()
 }
 
 func (p BitPosition) BitOffset() int64 {
-  r := initInt().Mod(p.Int, big.NewInt(C))
+  r := Zero().Mod(p.Int, big.NewInt(C))
   return r.Int64()
 }
 
 func (p BitPosition) Plus(other BitPosition) BitPosition {
-  return BitPosition{ initInt().Add(p.Int, other.Int) }
+  return BitPosition{ Zero().Add(p.Int, other.Int) }
 }
 
 func (p BitPosition) Minus(other BitPosition) BitPosition {
-  return BitPosition{ initInt().Sub(p.Int, other.Int) }
+  return BitPosition{ Zero().Sub(p.Int, other.Int) }
 }
 
 // CeilByteOffset takes the absolute value bit index and returns the
@@ -60,12 +60,8 @@ func (p BitPosition) CeilByteOffset() (int64, error) {
     return 0, err
   }
 
-  r := initInt().Add(initInt(), p.Int)
+  r := Zero().Add(Zero().Int, p.Int)
   r.Add(r, big.NewInt(C - 1))
   r.Div(r, big.NewInt(C))
   return r.Int64(), nil
-}
-
-func initInt() *big.Int {
-  return big.NewInt(0)
 }
