@@ -5,14 +5,14 @@ import(
   "errors"
 )
 
-type config_0 struct {
-  advanceRate uint16
-  windowSize uint16
-  byteLength uint64
-  bitLength uint8
+type Config_0 struct {
+  AdvanceRate uint16
+  WindowSize uint16
+  ByteLength uint64
+  BitLength uint8
 }
-func (c config_0) DataLength() (bitpos.BitPosition, error) {
-  p := bitpos.New( int64(c.byteLength), int64(c.bitLength) )
+func (c Config_0) DataLength() (bitpos.BitPosition, error) {
+  p := bitpos.New( int64(c.ByteLength), int64(c.BitLength) )
 
   if p.Sign() == -1 {
     return bitpos.BitPosition{},

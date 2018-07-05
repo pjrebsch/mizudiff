@@ -5,10 +5,9 @@ import(
   "github.com/pjrebsch/mizudiff/bitstr"
   "encoding/binary"
   "errors"
-  "fmt"
 )
 
-const DigestVersion = 0
+const CurrentVersion = 0x0
 
 // Versions defines the valid versions and the expected byte length of their
 // configs.
@@ -19,14 +18,31 @@ var Versions = map[uint32]uint16 {
 type Digest struct {
   Version uint32
   Config interface{}
-  data bitstr.BitString
+  Data bitstr.BitString
 }
 
 type Config interface {
   DataLength() (bitpos.BitPosition, error)
 }
 
-func New(raw []byte) (Digest, error) {
+func New(s bitstr.BitString) (Digest, error) {
+  c := Config_0{}
+  c.AdvanceRate = 1
+  c.WindowSize  = 8
+
+  data, err := s.XORCompress(c.AdvanceRate, c.WindowSize)
+  if err != nil {
+    return Digest{}, err
+  }
+
+  l := data.Length()
+  c.ByteLength  = uint64(l.ByteOffset())
+  c.BitLength   = uint8(l.BitOffset())
+
+  return Digest{ CurrentVersion, c, data }, nil
+}
+
+func Load(raw []byte) (Digest, error) {
   version, err := getVersion(raw)
   if err != nil {
     return Digest{}, err
@@ -67,20 +83,16 @@ func getConfig(version uint32, raw []byte) (Config, uint16, error) {
       errors.New("digest data is too short to contain config info")
   }
 
-  fmt.Println(raw)
-
   // Slice just where the config should exist. This will cause an error if
   // and catch if the code tries to grab outside of where it should.
   s := raw[:size]
 
-  fmt.Println(s)
-
   if version == 0x0 {
-    c := config_0{}
-    c.advanceRate = binary.BigEndian.Uint16(s[0:2])
-    c.windowSize  = binary.BigEndian.Uint16(s[2:4])
-    c.byteLength  = binary.BigEndian.Uint64(s[4:12])
-    c.bitLength   = uint8(s[12])
+    c := Config_0{}
+    c.AdvanceRate = binary.BigEndian.Uint16(s[0:2])
+    c.WindowSize  = binary.BigEndian.Uint16(s[2:4])
+    c.ByteLength  = binary.BigEndian.Uint64(s[4:12])
+    c.BitLength   = uint8(s[12])
     return c, size, nil
   }
 
