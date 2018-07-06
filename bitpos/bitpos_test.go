@@ -16,6 +16,66 @@ func TestIsEqual(t *testing.T) {
   }
 }
 
+func TestMin(t *testing.T) {
+  var tbl = []struct {
+    x1, x2 int64
+    y1, y2 int64
+    r1, r2 int64
+  }{
+    {0,0, 0,0, 0,0},
+    {0,1, 0,0, 0,0},
+    {0,0, 1,0, 0,0},
+    {1,0, 1,0, 1,0},
+    {0,-1, 0,0, 0,-1},
+    {0,0, -1,0, -1,0},
+    {-1,0, -1,0, -1,0},
+  }
+  for _, e := range tbl {
+    x := bitpos.New(e.x1, e.x2)
+    y := bitpos.New(e.y1, e.y2)
+
+    actual := bitpos.Min(x, y)
+    expected := bitpos.New(e.r1, e.r2)
+
+    if !bitpos.IsEqual(actual, expected) {
+      t.Errorf(
+        "Min(%d, %d): expected %d, got %d",
+        x, y, expected, actual,
+      )
+    }
+  }
+}
+
+func TestMax(t *testing.T) {
+  var tbl = []struct {
+    x1, x2 int64
+    y1, y2 int64
+    r1, r2 int64
+  }{
+    {0,0, 0,0, 0,0},
+    {0,1, 0,0, 0,1},
+    {0,0, 1,0, 1,0},
+    {1,0, 1,0, 1,0},
+    {0,-1, 0,0, 0,0},
+    {0,0, -1,0, 0,0},
+    {-1,0, -1,0, -1,0},
+  }
+  for _, e := range tbl {
+    x := bitpos.New(e.x1, e.x2)
+    y := bitpos.New(e.y1, e.y2)
+
+    actual := bitpos.Max(x, y)
+    expected := bitpos.New(e.r1, e.r2)
+
+    if !bitpos.IsEqual(actual, expected) {
+      t.Errorf(
+        "Max(%d, %d): expected %d, got %d",
+        x, y, expected, actual,
+      )
+    }
+  }
+}
+
 var tblNew = []struct {
   x1, x2 int64  // byte offset inputs
   r int64       // expectation
@@ -157,8 +217,8 @@ func TestMinus(t *testing.T) {
 
 func TestDividedBy(t *testing.T) {
   var tbl = []struct {
-    x1, x2 int64  // byte offset inputs
-    y1, y2 int64  // bit offset inputs
+    x1, x2 int64  // offset inputs
+    y1, y2 int64  // offset inputs
     r1, r2 int64  // expectation
   }{
     {0,1, 0,1, 0,1},
@@ -180,6 +240,38 @@ func TestDividedBy(t *testing.T) {
     if !bitpos.IsEqual(actual, expected) {
       t.Errorf(
         "%d.DividedBy(%d): expected %d, got %d",
+        x, y, expected, actual,
+      )
+    }
+  }
+}
+
+func TestCeilDividedBy(t *testing.T) {
+  var tbl = []struct {
+    x1, x2 int64  // offset inputs
+    y1, y2 int64  // offset inputs
+    r1, r2 int64  // expectation
+  }{
+    {0,1, 0,1, 0,1},
+    {1,0, 0,1, 1,0},
+    {0,3, 0,2, 0,2},
+    {0,1, 0,2, 0,1},
+    {1,0, 0,2, 0,4},
+    {-1,0, 0,1, -1,0},
+    {-2,1, 0,2, -1,1},
+    {-3,7, -1,0, 0,4},
+    {0,65, 0,8, 0,9},
+  }
+  for _, e := range tbl {
+    x := bitpos.New( e.x1, e.x2 )
+    y := bitpos.New( e.y1, e.y2 )
+
+    actual := x.CeilDividedBy(y)
+    expected := bitpos.New( e.r1, e.r2 )
+
+    if !bitpos.IsEqual(actual, expected) {
+      t.Errorf(
+        "%d.CeilDividedBy(%d): expected %d, got %d",
         x, y, expected, actual,
       )
     }

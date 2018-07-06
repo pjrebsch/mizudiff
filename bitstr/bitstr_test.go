@@ -21,6 +21,32 @@ var tblConstructors = []struct {
   { 10000, 3094199 },
 }
 
+func TestIsEqual(t *testing.T) {
+  var tbl = []struct {
+    a, b []byte
+    r bool
+  }{
+    { []byte{}, []byte{}, true },
+    { []byte{0x00}, []byte{}, false },
+    { []byte{}, []byte{0x00}, false },
+    { []byte{0x00}, []byte{0xff}, false },
+    { []byte{0xfa}, []byte{0xfa}, true },
+  }
+  for _, e := range tbl {
+    aStr, bStr := bitstr.New(e.a), bitstr.New(e.b)
+
+    actual := bitstr.IsEqual(aStr, bStr)
+    expected := e.r
+
+    if actual != expected {
+      t.Errorf(
+        "IsEqual(%02x, %02x): expected %v, got %v",
+        aStr.Bytes(), bStr.Bytes(), expected, actual,
+      )
+    }
+  }
+}
+
 func TestNew(t *testing.T) {
   t.Run("uses a copy of the original slice", func(t *testing.T) {
     b := []byte{ 0xff }
@@ -375,6 +401,52 @@ func TestXORCompress(t *testing.T) {
       t.Errorf(
         "XORCompress(%d, %d): expected %08b, got %08b",
         e.advanceRate, e.windowSize, expected, actual,
+      )
+    }
+  }
+}
+
+func TestDiff(t *testing.T) {
+  var tbl = []struct {
+    w1, w2 int64
+    a, b, r []byte
+  }{
+    { 0,8, []byte{}, []byte{}, []byte{} },
+    { 0,8, []byte{0x00}, []byte{}, []byte{} },
+    { 0,8, []byte{0xf2}, []byte{0xf2}, []byte{0x00} },
+    { 0,8, []byte{0x00,0x00}, []byte{0x00,0x11}, []byte{0x40} },
+    {
+      0,7,
+      []byte{0xa8,0x1b}, // 1010100 0000110 11
+      []byte{0x32},      // 0011001 0
+      []byte{0xc0},      // 11
+    }, {
+      0,3,
+      []byte{0xa8,0x1b}, // 101 010 000 001 101 1
+      []byte{0xb4,0x7a}, // 101 101 000 111 101 0
+      []byte{0x54}, // 010101
+    },
+  }
+  for _, e := range tbl {
+    w := bitpos.New(e.w1, e.w2)
+    a := bitstr.New(e.a)
+    b := bitstr.New(e.b)
+
+    d, err := bitstr.Diff(a, b, w)
+    if err != nil {
+      t.Fatalf(
+        "Diff(%08b, %08b, %d): did not expect an error but got one: %#v",
+        a.Bytes(), b.Bytes(), w, err.Error(),
+      )
+    }
+
+    actual := d.Bytes()
+    expected := e.r
+
+    if !bytes.Equal(actual, expected) {
+      t.Errorf(
+        "Diff(%08b, %08b, %d): expected %08b, got %08b",
+        a.Bytes(), b.Bytes(), w, expected, actual,
       )
     }
   }

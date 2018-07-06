@@ -24,7 +24,7 @@ func TestNew(t *testing.T) {
     data, err := s.XORCompress(adv, win)
     if err != nil {
       t.Fatalf(
-        "New(0x%02x): XORCompress(): did not expect an error, but got one: %v",
+        "New(0x%02x): XORCompress(): did not expect an error, but got one: %#v",
         s.Bytes(), err.Error(),
       )
     }
@@ -34,7 +34,7 @@ func TestNew(t *testing.T) {
     d, err := digest.New(s)
     if err != nil {
       t.Fatalf(
-        "New(0x%02x): did not expect an error, but got one: %v",
+        "New(0x%02x): did not expect an error, but got one: %#v",
         s.Bytes(), err.Error(),
       )
     }
@@ -47,20 +47,6 @@ func TestNew(t *testing.T) {
     }
 
     c := d.Config.(digest.Config_0)
-
-    if c.AdvanceRate != adv {
-      t.Errorf(
-        "New(0x%02x): expected config advance rate %v, got %v",
-        s.Bytes(), adv, c.AdvanceRate,
-      )
-    }
-
-    if c.WindowSize != win {
-      t.Errorf(
-        "New(0x%02x): expected config window size %v, got %v",
-        s.Bytes(), win, c.WindowSize,
-      )
-    }
 
     if c.ByteLength != uint64(l.ByteOffset()) {
       t.Errorf(
@@ -125,8 +111,6 @@ func TestLoad(t *testing.T) {
   t.Run("config length can't be greater than the data length", func(t *testing.T) {
     raw := []byte{
       0x00, 0x00, 0x00, 0x00,  // version
-      0x00, 0x01,  // advance rate
-      0x00, 0x08,  // window size
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02,  // byte length
       0x00,  // bit length
       0xff,  // data

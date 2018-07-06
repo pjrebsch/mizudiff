@@ -4,14 +4,16 @@ import (
   "github.com/pjrebsch/mizudiff/bitpos"
   "errors"
   "math"
-  // "fmt"
-  // "strings"
-  // "math/bits"
+  "bytes"
 )
 
 type BitString struct {
   bytes []byte  // raw data
   length bitpos.BitPosition  // bit length of the string
+}
+
+func IsEqual(a, b BitString) bool {
+  return bytes.Equal(a.bytes, b.bytes)
 }
 
 func New(bytes []byte) BitString {
@@ -138,7 +140,7 @@ func (s BitString) XORCompress(adv, win uint16) (BitString, error) {
   advRate := bitpos.New(0, int64(adv))
   winSize := bitpos.New(0, int64(win))
 
-  windows := s.Length().DividedBy(winSize)
+  windows := s.Length().CeilDividedBy(winSize)
 
   // This isn't true growth, because the first window never grows.
   growth := windows.MultipliedBy(advRate)
@@ -197,6 +199,58 @@ func (s BitString) XORCompress(adv, win uint16) (BitString, error) {
   r := New(out)
   r.SetLength(length)
   return r, nil
+}
+
+// Diff produces a bit string from two given bit strings which represents
+// the difference between them. Each output bit represents the difference
+// of each window compared between the bit strings. A 0 bit represents
+// equality, whereas a 1 bit represents inequality.
+//
+// When given strings of different lengths, it will only compare as much as
+// the length of the shortest string.
+func Diff(a, b BitString, w bitpos.BitPosition) (BitString, error) {
+  s := BitString{}
+
+  if w.Sign() < 1 {
+    return s, errors.New("window size must be greater than zero")
+  }
+
+  minLength := bitpos.Min(a.Length(), b.Length())
+  outLength := minLength.CeilDividedBy(w)
+
+  l, err := outLength.CeilByteOffset()
+  if err != nil {
+    return s, err
+  }
+  out := make([]byte, l)
+
+  // Bit index for `out`.
+  i := bitpos.Zero()
+
+  // Bit index for `a` and `b`.
+  j := bitpos.Zero()
+
+  for i.Cmp(outLength.Int) < 0 {
+    aWin, err := a.Slice(j, w)
+    if err != nil {
+      return s, err
+    }
+    bWin, err := b.Slice(j, w)
+    if err != nil {
+      return s, err
+    }
+
+    if !IsEqual(aWin, bWin) {
+      out[i.ByteOffset()] |= 0x1 << (bitpos.C - uint8(i.BitOffset()) - 1)
+    }
+
+    i = i.Plus(bitpos.New(0,1))
+    j = j.Plus(w)
+  }
+
+  s = New(out)
+  s.SetLength(outLength)
+  return s, nil
 }
 
 // func (s BitString) Debug() {

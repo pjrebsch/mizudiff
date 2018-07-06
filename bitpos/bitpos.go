@@ -17,16 +17,30 @@ func IsEqual(a, b BitPosition) bool {
   return a.Cmp(b.Int) == 0
 }
 
+func Zero() BitPosition {
+  return BitPosition{ big.NewInt(0) }
+}
+
+func Min(x, y BitPosition) BitPosition {
+  if x.Cmp(y.Int) > 0 {
+    return y
+  }
+  return x
+}
+
+func Max(x, y BitPosition) BitPosition {
+  if x.Cmp(y.Int) < 0 {
+    return y
+  }
+  return x
+}
+
 // New allocates and returns a new BitPosition.
 func New(byteOffset, bitOffset int64) BitPosition {
   p := big.NewInt(C)
   p.Mul(p, big.NewInt(byteOffset))
   p.Add(p, big.NewInt(bitOffset))
   return BitPosition{ p }
-}
-
-func Zero() BitPosition {
-  return BitPosition{ big.NewInt(0) }
 }
 
 func (p BitPosition) ByteOffset() int64 {
@@ -49,6 +63,16 @@ func (p BitPosition) Minus(other BitPosition) BitPosition {
 
 func (p BitPosition) DividedBy(other BitPosition) BitPosition {
   return BitPosition{ Zero().Div(p.Int, other.Int) }
+}
+
+func (p BitPosition) CeilDividedBy(other BitPosition) BitPosition {
+  result, remainder := Zero().DivMod(p.Int, other.Int, Zero().Int)
+
+  if remainder.Cmp(big.NewInt(0)) != 0 {
+    result.Add(result, big.NewInt(int64(remainder.Sign())))
+  }
+
+  return BitPosition{ result }
 }
 
 func (p BitPosition) MultipliedBy(other BitPosition) BitPosition {

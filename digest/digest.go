@@ -12,7 +12,7 @@ const CurrentVersion = 0x0
 // Versions defines the valid versions and the expected byte length of their
 // configs.
 var Versions = map[uint32]uint16 {
-  0x0: 13,
+  0x0: 9,
 }
 
 type Digest struct {
@@ -27,10 +27,8 @@ type Config interface {
 
 func New(s bitstr.BitString) (Digest, error) {
   c := Config_0{}
-  c.AdvanceRate = 1
-  c.WindowSize  = 8
 
-  data, err := s.XORCompress(c.AdvanceRate, c.WindowSize)
+  data, err := s.XORCompress(c.AdvanceRate(), c.WindowSize())
   if err != nil {
     return Digest{}, err
   }
@@ -66,6 +64,12 @@ func Load(raw []byte) (Digest, error) {
   return Digest{ version, config, data }, nil
 }
 
+// func Diff(a, b Digest) (bitstr.BitString, error) {
+//   if a.Version != b.Version {
+//     return s, errors.New("digest versions do not match")
+//   }
+// }
+
 func getVersion(raw []byte) (uint32, error) {
   if len(raw) < 4 {
     return 0, errors.New("digest data is too short to contain version info")
@@ -89,10 +93,8 @@ func getConfig(version uint32, raw []byte) (Config, uint16, error) {
 
   if version == 0x0 {
     c := Config_0{}
-    c.AdvanceRate = binary.BigEndian.Uint16(s[0:2])
-    c.WindowSize  = binary.BigEndian.Uint16(s[2:4])
-    c.ByteLength  = binary.BigEndian.Uint64(s[4:12])
-    c.BitLength   = uint8(s[12])
+    c.ByteLength  = binary.BigEndian.Uint64(s[0:8])
+    c.BitLength   = uint8(s[8])
     return c, size, nil
   }
 
