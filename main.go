@@ -4,39 +4,41 @@ import (
   "fmt"
   "log"
   "math"
-  "encoding/hex"
+  // "encoding/hex"
   "io/ioutil"
-  "bytes"
+  // "bytes"
   "github.com/pjrebsch/mizudiff/bitstr"
   "github.com/pjrebsch/mizudiff/bitpos"
 )
 
 func loadSources() ([]byte, []byte) {
-  a_raw, err := ioutil.ReadFile("tmp/srcC.hex.txt")
+  a_raw, err := ioutil.ReadFile("testdata/git-2.9.5.tar.gz.txt")
   if err != nil {
     log.Fatal(err)
   }
-  b_raw, err := ioutil.ReadFile("tmp/srcD.hex.txt")
-  if err != nil {
-    log.Fatal(err)
-  }
-
-  a_raw = bytes.Trim(a_raw, "\n")
-  b_raw = bytes.Trim(b_raw, "\n")
-
-  a := make([]byte, hex.DecodedLen(len(a_raw)))
-  b := make([]byte, hex.DecodedLen(len(b_raw)))
-
-  _, err = hex.Decode(a, a_raw)
-  if err != nil {
-    log.Fatal(err)
-  }
-  _, err = hex.Decode(b, b_raw)
+  b_raw, err := ioutil.ReadFile("testdata/git-2.9.5.tar.gz.txt-2")
   if err != nil {
     log.Fatal(err)
   }
 
-  return a, b
+  return a_raw, b_raw
+
+  // a_raw = bytes.Trim(a_raw, "\n")
+  // b_raw = bytes.Trim(b_raw, "\n")
+  //
+  // a := make([]byte, hex.DecodedLen(len(a_raw)))
+  // b := make([]byte, hex.DecodedLen(len(b_raw)))
+
+  // _, err = hex.Decode(a, a_raw)
+  // if err != nil {
+  //   log.Fatal(err)
+  // }
+  // _, err = hex.Decode(b, b_raw)
+  // if err != nil {
+  //   log.Fatal(err)
+  // }
+
+  // return a, b
 }
 
 // See https://dave.cheney.net/2014/09/28/using-build-to-switch-between-debug-and-release
@@ -148,19 +150,29 @@ func main() {
   // a := []byte("abcd")
   // b := []byte("0abcd")
 
-  // sigA := xorCompress(a)[:]
-  // sigB := xorCompress(b)[:]
-  sigA := a
-  sigB := b
+  sa, sb := bitstr.New(a), bitstr.New(b)
 
-  debug("BEFORE: %08b\n", sigB)
-  bs := bitstr.New(sigB, bitpos.New(uint(len(sigB)), 0))
-  bs = bs.ShiftLeft(7)
-  sigB = bs.Bytes
-  debug("AFTER : %08b\n", sigB)
+  log.Println("Digesting...")
 
-  debug("len(A): %#v | len(sig_A): %#v | Ratio: %f%%\n", len(a), len(sigA), float64(len(sigA))/float64(len(a))*100)
-  debug("len(B): %#v | len(sig_B): %#v | Ratio: %f%%\n", len(b), len(sigB), float64(len(sigB))/float64(len(b))*100)
+  da, err := sa.XORCompress(1,8)
+  if err != nil {
+    log.Fatalln(err)
+  }
+  db, err := sb.XORCompress(1,8)
+  if err != nil {
+    log.Fatalln(err)
+  }
+
+  // db, _ = db.Shift(bitpos.New(0,-1))
+
+  // debug("da: %02x\n", da.Bytes())
+  // debug("db: %02x\n", db.Bytes())
+
+  la, _ := da.Length().CeilByteOffset()
+  lb, _ := db.Length().CeilByteOffset()
+
+  debug("len(A): %#v | len(digest_A): %#v | Ratio: %f%%\n", len(a), la, float64(la)/float64(len(a))*100)
+  debug("len(B): %#v | len(digest_B): %#v | Ratio: %f%%\n", len(b), lb, float64(lb)/float64(len(b))*100)
 
   // for i := 0; i < 5; i += 1 {
   //   new_block := make([]byte, SRC_BLOCK_SIZE)
@@ -178,7 +190,16 @@ func main() {
     // debug("%08b\n", sigA)
     // debug("%08b\n", sigB)
   //
-    res := diffCompare(sigA, sigB)
-    prettyDiffComparison(res)
+    // res := diffCompare(sigA, sigB)
+    // prettyDiffComparison(res)
   // }
+
+  log.Println("Diffing...")
+
+  diff, err := bitstr.Diff(da, db, bitpos.New(1,0))
+  if err != nil {
+    log.Fatalln(err)
+  }
+
+  debug("diff: %08b\n", diff.Bytes())
 }

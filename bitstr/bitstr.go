@@ -17,12 +17,10 @@ func IsEqual(a, b BitString) bool {
 }
 
 func New(bytes []byte) BitString {
-  l := len(bytes)
-  b := make([]byte, l)
+  l := bitpos.New(int64(len(bytes)), 0)
+  b := make([]byte, uint64(l.ByteOffset()))
   copy(b, bytes)
-
-  s := BitString{ b, bitpos.New(int64(l), 0) }
-  return s
+  return BitString{ b, l }
 }
 
 func (s BitString) Bytes() []byte {
